@@ -4,11 +4,11 @@ import claim from './claim.js';
 import wallets from './wallets.js';
 import balance from './balance.js';
 
-const router = expressPkg.Router();
+const userIndexRouter = expressPkg.Router();
 
-router.use('/holdings', holdings);
-router.use('/claim', claim);
-router.use('/wallets', wallets);
-router.use('/balance', balance);
+userIndexRouter.use('/holdings', holdings);
+userIndexRouter.use('/claim', claim);
+userIndexRouter.use('/wallets', wallets);
+userIndexRouter.use('/balance', balance);
 
-export default router; 
+export default userIndexRouter; 

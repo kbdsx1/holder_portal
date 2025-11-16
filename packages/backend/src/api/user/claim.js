@@ -7,12 +7,12 @@ import nacl from 'tweetnacl';
 import { getRuntimeConfig } from '../../config/runtime.js';
 import { parse } from 'cookie';
 
-const router = expressPkg.Router();
+const userClaimRouter = expressPkg.Router();
 
 const runtime = getRuntimeConfig();
 
 // New: GET /api/user/claim - return claim status for current user
-router.get('/', async (req, res) => {
+userClaimRouter.get('/', async (req, res) => {
   try {
     // Fallback auth: hydrate session from cookie in serverless
     if (!req.session?.user) {
@@ -226,7 +226,7 @@ router.get('/check-balance', async (req, res) => {
   }
 });
 
-router.post('/', async (req, res) => {
+userClaimRouter.post('/', async (req, res) => {
   if (claimsDisabled) {
     return respondClaimsDisabled(res);
   }
@@ -336,7 +336,7 @@ router.post('/', async (req, res) => {
 });
 
 // Move database updates to the confirm endpoint
-router.post('/confirm', async (req, res) => {
+userClaimRouter.post('/confirm', async (req, res) => {
   const { signature, walletAddress, amount } = req.body;
   if (!signature || !walletAddress || !amount) {
     return res.status(400).json({ error: 'Missing signature, wallet address or amount' });
@@ -485,7 +485,7 @@ router.post('/confirm', async (req, res) => {
 });
 
 // Add treasury signing endpoint
-router.post('/sign', async (req, res) => {
+userClaimRouter.post('/sign', async (req, res) => {
   try {
     const { serializedTx } = req.body;
     
@@ -530,7 +530,7 @@ router.post('/sign', async (req, res) => {
 });
 
 // New endpoint to finalize claim after user signs
-router.post('/finalize', async (req, res) => {
+userClaimRouter.post('/finalize', async (req, res) => {
   const { signedTransaction, amount, walletAddress } = req.body;
   let client;
 
@@ -641,4 +641,4 @@ router.post('/finalize', async (req, res) => {
   }
 });
 
-export default router; 
+export default userClaimRouter; 

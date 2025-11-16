@@ -1,14 +1,14 @@
 import expressPkg from 'express';
 import dbPool from '../config/database.js';
 
-const router = expressPkg.Router();
+const collectionCountsRouter = expressPkg.Router();
 
-router.get('/:discord_id', async (req, res) => {
+collectionCountsRouter.get('/:discord_id', async (req, res) => {
   const discord_id = req.params.discord_id;
   let client;
 
   try {
-    client = await pool.connect();
+    client = await dbPool.connect();
 
     // Check if user exists in user_roles
     const userResult = await client.query(
@@ -71,4 +71,4 @@ router.get('/:discord_id', async (req, res) => {
   }
 });
 
-export default router; 
+export default collectionCountsRouter; 

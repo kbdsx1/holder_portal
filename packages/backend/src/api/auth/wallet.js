@@ -5,12 +5,12 @@ import pkg from 'pg';
 const { Pool } = pkg;
 import { pool } from '../config/database.js';
 
-const router = expressPkg.Router();
+const authWalletRouter = expressPkg.Router();
 
 const DISCORD_GUILD_ID = process.env.DISCORD_GUILD_ID;
 const RPC_URL = process.env.SOLANA_RPC_URL || 'https://api.mainnet-beta.solana.com';
 
-router.post('/', async (req, res) => {
+authWalletRouter.post('/', async (req, res) => {
   try {
     // Check for discord_user cookie
     const cookies = req.headers.cookie ? parse(req.headers.cookie) : {};
@@ -131,4 +131,4 @@ router.post('/', async (req, res) => {
   }
 });
 
-export default router; 
+export default authWalletRouter; 

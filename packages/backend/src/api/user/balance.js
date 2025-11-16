@@ -2,10 +2,10 @@ import expressPkg from 'express';
 import dbPool from '../config/database.js';
 import { parse } from 'cookie';
 
-const router = expressPkg.Router();
+const userBalanceRouter = expressPkg.Router();
 
 // GET /api/user/balance - sum token balance from token_holders for current user
-router.get('/', async (req, res) => {
+userBalanceRouter.get('/', async (req, res) => {
   try {
     // Hydrate session from cookie if needed
     if (!req.session?.user) {
@@ -38,7 +38,7 @@ router.get('/', async (req, res) => {
   }
 });
 
-export default router; 
+export default userBalanceRouter; 
 import express from 'express';
 import { pool } from '../config/database.js';
 

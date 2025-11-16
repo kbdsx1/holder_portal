@@ -2,9 +2,9 @@ import expressPkg from 'express';
 import { parse } from 'cookie';
 import dbPool from '../config/database.js';
 
-const router = expressPkg.Router();
+const authCheckRouter = expressPkg.Router();
 
-router.get('/', async (req, res) => {
+authCheckRouter.get('/', async (req, res) => {
   let client;
   let retries = 3;
   
@@ -87,4 +87,4 @@ router.get('/', async (req, res) => {
   }
 });
 
-export default router; 
+export default authCheckRouter; 

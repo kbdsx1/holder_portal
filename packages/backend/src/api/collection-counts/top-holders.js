@@ -1,9 +1,9 @@
 import expressPkg from 'express';
 import dbPool from '../config/database.js';
 
-const router = expressPkg.Router();
+const topHoldersRouter = expressPkg.Router();
 
-router.get('/', async (req, res) => {
+topHoldersRouter.get('/', async (req, res) => {
   let client;
   try {
     const { collection = 'all', type = 'bux,nfts' } = req.query;
@@ -68,4 +68,4 @@ router.get('/', async (req, res) => {
   }
 });
 
-export default router; 
+export default topHoldersRouter; 

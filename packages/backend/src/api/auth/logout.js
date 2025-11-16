@@ -2,7 +2,7 @@ import expressPkg from 'express';
 import dbPool from '../config/database.js';
 import { getRuntimeConfig } from '../../config/runtime.js';
 
-const router = expressPkg.Router();
+const authLogoutRouter = expressPkg.Router();
 const runtime = getRuntimeConfig();
 const FRONTEND_URL = runtime.frontendUrl;
 const SESSION_COOKIE_NAME = process.env.SESSION_COOKIE_NAME || 'connect.sid';
@@ -16,7 +16,7 @@ const COOKIE_OPTIONS = {
   expires: new Date(0)
 };
 
-router.post('/', async (req, res) => {
+authLogoutRouter.post('/', async (req, res) => {
   console.log('Logout request received:', {
     sessionID: req.sessionID,
     cookies: req.cookies,
@@ -83,7 +83,7 @@ router.post('/', async (req, res) => {
   }
 });
 
-router.options('/', (req, res) => {
+authLogoutRouter.options('/', (req, res) => {
   res.setHeader('Access-Control-Allow-Credentials', 'true');
   res.setHeader('Access-Control-Allow-Origin', FRONTEND_URL);
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -91,4 +91,4 @@ router.options('/', (req, res) => {
   res.status(200).end();
 });
 
-export default router;
+export default authLogoutRouter;

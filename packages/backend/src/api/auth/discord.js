@@ -1,7 +1,7 @@
 import expressPkg from 'express';
 import crypto from 'crypto';
 
-const router = expressPkg.Router();
+const authDiscordRouter = expressPkg.Router();
 
 const FRONTEND_URL = process.env.FRONTEND_URL || (process.env.NODE_ENV === 'production'
   ? 'https://buxdao.com'
@@ -13,7 +13,7 @@ const API_URL = process.env.API_URL || (process.env.NODE_ENV === 'production'
 
 const REDIRECT_URI_ENV = process.env.DISCORD_REDIRECT_URI || null;
 
-router.get('/', async (req, res) => {
+authDiscordRouter.get('/', async (req, res) => {
   try {
     console.log('Discord auth request:', {
       sessionID: req.sessionID,
@@ -69,4 +69,4 @@ router.get('/', async (req, res) => {
   }
 });
 
-export default router; 
+export default authDiscordRouter; 

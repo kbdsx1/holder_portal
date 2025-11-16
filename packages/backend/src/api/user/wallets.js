@@ -2,10 +2,10 @@ import expressPkg from 'express';
 import dbPool from '../config/database.js';
 import { parse } from 'cookie';
 
-const router = expressPkg.Router();
+const userWalletsRouter = expressPkg.Router();
 
 // GET /api/user/wallets - returns all wallets linked to the current Discord user
-router.get('/', async (req, res) => {
+userWalletsRouter.get('/', async (req, res) => {
   // Fallback auth: hydrate session from cookie in serverless
   if (!req.session?.user) {
     const cookies = parse(req.headers.cookie || '');
@@ -41,7 +41,7 @@ router.get('/', async (req, res) => {
 });
 
 // POST /api/user/wallets - add a new wallet for the current Discord user
-router.post('/', async (req, res) => {
+userWalletsRouter.post('/', async (req, res) => {
   // Fallback auth: hydrate session from cookie in serverless
   if (!req.session?.user) {
     const cookies = parse(req.headers.cookie || '');
@@ -133,4 +133,4 @@ router.post('/', async (req, res) => {
   }
 });
 
-export default router; 
+export default userWalletsRouter; 
