@@ -91,7 +91,7 @@ userWalletsRouter.post('/', async (req, res) => {
     );
 
     // Upsert collection_counts per-colour and totals for this user
-    await pool.query(
+    await dbPool.query(
       `
         INSERT INTO collection_counts (
           discord_id, discord_name,
@@ -124,7 +124,23 @@ userWalletsRouter.post('/', async (req, res) => {
     );
 
     // Ensure counts are recomputed (in case triggers are not present)
-    await pool.query('SELECT update_collection_counts($1::varchar)', [discordId]);
+    await dbPool.query('SELECT update_collection_counts($1::varchar)', [discordId]);
+
+    // Attach wallet ownership on token_holders (preserves existing balance if any)
+    await dbPool.query(
+      `
+        INSERT INTO token_holders (wallet_address, owner_discord_id, owner_name, last_updated)
+        VALUES ($1, $2, $3, NOW())
+        ON CONFLICT (wallet_address) DO UPDATE SET
+          owner_discord_id = EXCLUDED.owner_discord_id,
+          owner_name = EXCLUDED.owner_name,
+          last_updated = NOW()
+      `,
+      [wallet_address, discordId, discordName]
+    );
+
+    // Rebuild roles JSON from collection_counts + roles catalog
+    await dbPool.query('SELECT rebuild_user_roles($1::varchar)', [discordId]);
 
     res.json({ success: true });
   } catch (error) {
