@@ -1,0 +1,24 @@
+{
+  "name": "cannasolz-core",
+  "private": true,
+  "version": "0.1.0",
+  "description": "White-label holder verification, Discord roles, sales bot, and reward claims",
+  "workspaces": [
+    "packages/backend",
+    "packages/frontend",
+    "packages/monitoring"
+  ],
+  "scripts": {
+    "bootstrap": "node ./scripts/bootstrap-env.mjs",
+    "lint": "echo 'add linters per package'",
+    "dev": "concurrently --names backend,frontend 'npm --workspace packages/backend run dev' 'npm --workspace packages/frontend run dev'",
+    "jobs": "npm --workspace packages/monitoring run start",
+    "seed:nfts": "node ./scripts/seed-nft-metadata.mjs",
+    "seed:token": "node ./scripts/seed-token-holders.mjs"
+  },
+  "dependencies": {
+    "concurrently": "^8.2.0",
+    "pg": "^8.13.1",
+    "dotenv": "^16.4.5"
+  }
+}

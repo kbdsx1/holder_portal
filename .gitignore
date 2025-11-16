@@ -1,0 +1,8 @@
+config/.env
+packages/backend/.env
+node_modules
+*.log
+.cache
+dist
+build
+.env

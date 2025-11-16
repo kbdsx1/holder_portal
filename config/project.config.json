@@ -1,0 +1,44 @@
+{
+  "project": {
+    "slug": "cannasolz",
+    "name": "CannaSolz",
+    "description": "Holder verification, Discord roles, live sales bot, and rewards claims",
+    "primaryColor": "#1B4332",
+    "accentColor": "#95D5B2",
+    "logoPath": "src/assets/logo.svg"
+  },
+  "discord": {
+    "guildId": "000000000000000000",
+    "holderRoleId": "000000000000000000",
+    "verifiedRoleIds": [
+      "000000000000000001",
+      "000000000000000002"
+    ],
+    "announcementChannelId": "000000000000000003"
+  },
+  "collections": [
+    {
+      "symbol": "CANNAZ",
+      "friendlyName": "CannaSolz Genesis",
+      "mintAddresses": [],
+      "holderRoleId": "000000000000000004",
+      "minBalance": 1,
+      "collectionAddress": "COLLECTION_ADDRESS_PLACEHOLDER"
+    }
+  ],
+  "rewards": {
+    "currency": "CSz420",
+    "treasuryWallet": "FksThXsojjxkWuEdgmruo86vS2monx2jNEzeKiNpp4Ha",
+    "claimProgramId": "",
+    "dailyEmission": 10,
+    "cooldownHours": 24,
+    "tokenMint": "CSz42omfkxXMcrf74ppUtQ9VCbFkoo1A3Eoqnmuwyw7Y"
+  },
+  "frontend": {
+    "apiBaseUrl": "http://localhost:3001",
+    "appUrl": "http://localhost:5173"
+  },
+  "collectionCountColumns": {
+    "CANNAZ": "collection_count_column"
+  }
+}

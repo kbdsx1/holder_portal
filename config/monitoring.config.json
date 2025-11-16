@@ -1,0 +1,21 @@
+{
+  "jobs": {
+    "syncCollections": {
+      "enabled": true,
+      "schedule": "0 * * * *",
+      "channelId": "000000000000000010"
+    },
+    "syncHolders": {
+      "enabled": true,
+      "schedule": "15 * * * *"
+    },
+    "syncRoles": {
+      "enabled": true,
+      "schedule": "*/30 * * * *"
+    },
+    "processDailyRewards": {
+      "enabled": true,
+      "schedule": "0 5 * * *"
+    }
+  }
+}
