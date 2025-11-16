@@ -312,7 +312,7 @@ async function handleDiscordAuth(req, res) {
     return res.status(302).end();
   } catch (error) {
     console.error('[Discord Auth] Error:', error);
-    res.setHeader('Location', `${FRONTEND_URL}/verify?error=${encodeURIComponent(error.message)}`);
+    res.setHeader('Location', `${FRONTEND_URL}/?error=${encodeURIComponent(error.message)}`);
     return res.status(302).end();
   }
 }
@@ -338,7 +338,7 @@ async function handleDiscordCallback(req, res) {
 
     if (!storedState || storedState !== state) {
       console.error('[Discord Callback] State mismatch or missing');
-      res.setHeader('Location', `${FRONTEND_URL}/verify?error=${encodeURIComponent('Invalid state parameter')}`);
+      res.setHeader('Location', `${FRONTEND_URL}/?error=${encodeURIComponent('Invalid state parameter')}`);
       return res.status(302).end();
     }
 
@@ -373,7 +373,7 @@ async function handleDiscordCallback(req, res) {
 
     if (!tokenResponse.ok) {
       console.error('[Discord Callback] Token error:', tokenText);
-      res.setHeader('Location', `${FRONTEND_URL}/verify?error=${encodeURIComponent('Failed to get token: ' + tokenText)}`);
+      res.setHeader('Location', `${FRONTEND_URL}/?error=${encodeURIComponent('Failed to get token: ' + tokenText)}`);
       return res.status(302).end();
     }
 
@@ -382,13 +382,13 @@ async function handleDiscordCallback(req, res) {
       tokenData = JSON.parse(tokenText);
     } catch (e) {
       console.error('[Discord Callback] Failed to parse token response:', e);
-      res.setHeader('Location', `${FRONTEND_URL}/verify?error=${encodeURIComponent('Invalid token response')}`);
+      res.setHeader('Location', `${FRONTEND_URL}/?error=${encodeURIComponent('Invalid token response')}`);
       return res.status(302).end();
     }
 
     if (!tokenData.access_token) {
       console.error('[Discord Callback] No access token in response');
-      res.setHeader('Location', `${FRONTEND_URL}/verify?error=${encodeURIComponent('No access token received')}`);
+      res.setHeader('Location', `${FRONTEND_URL}/?error=${encodeURIComponent('No access token received')}`);
       return res.status(302).end();
     }
 
@@ -410,7 +410,7 @@ async function handleDiscordCallback(req, res) {
 
     if (!userResponse.ok) {
       console.error('[Discord Callback] User data error:', userText);
-      res.setHeader('Location', `${FRONTEND_URL}/verify?error=${encodeURIComponent('Failed to get user data: ' + userText)}`);
+      res.setHeader('Location', `${FRONTEND_URL}/?error=${encodeURIComponent('Failed to get user data: ' + userText)}`);
       return res.status(302).end();
     }
 
@@ -419,13 +419,13 @@ async function handleDiscordCallback(req, res) {
       userData = JSON.parse(userText);
     } catch (e) {
       console.error('[Discord Callback] Failed to parse user data:', e);
-      res.setHeader('Location', `${FRONTEND_URL}/verify?error=${encodeURIComponent('Invalid user data response')}`);
+      res.setHeader('Location', `${FRONTEND_URL}/?error=${encodeURIComponent('Invalid user data response')}`);
       return res.status(302).end();
     }
 
     if (!userData.id || !userData.username) {
       console.error('[Discord Callback] Invalid user data:', userData);
-      res.setHeader('Location', `${FRONTEND_URL}/verify?error=${encodeURIComponent('Invalid user data received')}`);
+      res.setHeader('Location', `${FRONTEND_URL}/?error=${encodeURIComponent('Invalid user data received')}`);
       return res.status(302).end();
     }
 
@@ -455,11 +455,11 @@ async function handleDiscordCallback(req, res) {
 
     // Redirect to verify page
     console.log('[Discord Callback] Redirecting to verify page');
-    res.setHeader('Location', `${FRONTEND_URL}/verify`);
+    res.setHeader('Location', `${FRONTEND_URL}/`);
     return res.status(302).end();
   } catch (error) {
     console.error('[Discord Callback] Error:', error);
-    res.setHeader('Location', `${FRONTEND_URL}/verify?error=${encodeURIComponent(error.message)}`);
+    res.setHeader('Location', `${FRONTEND_URL}/?error=${encodeURIComponent(error.message)}`);
     return res.status(302).end();
   }
 }
