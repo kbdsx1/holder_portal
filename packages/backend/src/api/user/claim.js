@@ -5,6 +5,7 @@ import bs58 from 'bs58';
 import { pool } from '../config/database.js';
 import nacl from 'tweetnacl';
 import { getRuntimeConfig } from '../../config/runtime.js';
+import { parse } from 'cookie';
 
 const router = express.Router();
 
@@ -13,6 +14,24 @@ const runtime = getRuntimeConfig();
 // New: GET /api/user/claim - return claim status for current user
 router.get('/', async (req, res) => {
   try {
+    // Fallback auth: hydrate session from cookie in serverless
+    if (!req.session?.user) {
+      const cookies = parse(req.headers.cookie || '');
+      if (cookies.discord_user) {
+        try {
+          const user = JSON.parse(cookies.discord_user);
+          req.session = req.session || {};
+          req.session.user = {
+            discord_id: user.id || user.discord_id,
+            discord_username: user.username || user.discord_username,
+            discord_display_name: user.discord_display_name || user.global_name || user.display_name || user.username,
+            avatar: user.avatar || null
+          };
+        } catch {
+          // ignore parse errors
+        }
+      }
+    }
     if (!req.session?.user?.discord_id) {
       return res.status(401).json({ error: 'Not authenticated' });
     }
