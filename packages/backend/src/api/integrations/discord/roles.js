@@ -98,6 +98,30 @@ export async function syncUserRoles(discordId, guildId) {
       return false;
     }
     
+    // Ensure client is ready
+    if (!discord.isReady()) {
+      console.log('Discord client not ready, waiting...');
+      await new Promise((resolve) => {
+        if (discord.isReady()) {
+          resolve();
+        } else {
+          discord.once('ready', resolve);
+          // Timeout after 5 seconds
+          setTimeout(() => {
+            console.error('Discord client ready timeout');
+            resolve();
+          }, 5000);
+        }
+      });
+    }
+    
+    if (!discord.isReady()) {
+      console.error('Discord client still not ready after wait');
+      return false;
+    }
+    
+    console.log('Discord client ready, proceeding with role sync');
+    
     // Get Discord guild and member
     try {
       console.log('Fetching guild...');
@@ -142,11 +166,23 @@ export async function syncUserRoles(discordId, guildId) {
       // Apply role changes
       if (rolesToAdd.length > 0) {
         try {
+          console.log(`Attempting to add ${rolesToAdd.length} roles to member ${discordId}...`);
           await member.roles.add(rolesToAdd);
-          console.log(`Added roles for ${discordId}:`, rolesToAdd);
+          console.log(`Successfully added roles for ${discordId}:`, rolesToAdd);
         } catch (error) {
           console.error('Error adding roles:', error);
+          console.error('Error details:', {
+            message: error.message,
+            code: error.code,
+            status: error.status,
+            rolesToAdd,
+            memberId: discordId,
+            guildId: guildId
+          });
+          throw error; // Re-throw so caller knows it failed
         }
+      } else {
+        console.log(`No roles to add for ${discordId}`);
       }
 
       if (rolesToRemove.length > 0) {
@@ -175,11 +211,17 @@ export async function syncUserRoles(discordId, guildId) {
 function checkRoleEligibility(userRoles, role) {
   // Check if user has this role in their roles JSONB array
   if (userRoles.roles && Array.isArray(userRoles.roles)) {
-    const hasRole = userRoles.roles.some(r => 
-      r.id === role.discord_role_id || 
-      (r.name === role.name && r.collection === role.collection)
-    );
-    console.log(`Checking eligibility for ${role.name} (${role.discord_role_id}): ${hasRole}`);
+    // Convert both to strings for comparison (discord_role_id might be numeric or string)
+    const roleIdStr = String(role.discord_role_id);
+    const hasRole = userRoles.roles.some(r => {
+      const rIdStr = String(r.id || '');
+      return rIdStr === roleIdStr || 
+        (r.name === role.name && r.collection === role.collection);
+    });
+    console.log(`Checking eligibility for ${role.name} (${role.discord_role_id}): ${hasRole}`, {
+      userRolesArray: userRoles.roles.map(r => ({ id: r.id, name: r.name, collection: r.collection })),
+      checkingRole: { id: role.discord_role_id, name: role.name, collection: role.collection }
+    });
     return hasRole;
   }
   
