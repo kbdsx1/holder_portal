@@ -25,13 +25,46 @@ userBalanceRouter.get('/', async (req, res) => {
     if (!req.session?.user?.discord_id) {
       return res.status(401).json({ error: 'Not authenticated' });
     }
-    const { rows } = await dbPool.query(
+    // First try to get balance by owner_discord_id
+    let { rows } = await dbPool.query(
       `SELECT COALESCE(SUM(balance),0) AS balance
        FROM token_holders
        WHERE owner_discord_id = $1`,
       [req.session.user.discord_id]
     );
-    return res.json({ balance: Number(rows[0]?.balance || 0) });
+    
+    let balance = Number(rows[0]?.balance || 0);
+    
+    // Fallback: if no balance found by owner_discord_id, check wallets from user_wallets
+    if (balance === 0) {
+      const walletRows = await dbPool.query(
+        `SELECT wallet_address FROM user_wallets WHERE discord_id = $1`,
+        [req.session.user.discord_id]
+      );
+      
+      if (walletRows.rows.length > 0) {
+        const walletAddresses = walletRows.rows.map(r => r.wallet_address);
+        const balanceRows = await dbPool.query(
+          `SELECT COALESCE(SUM(balance),0) AS balance
+           FROM token_holders
+           WHERE wallet_address = ANY($1::text[])`,
+          [walletAddresses]
+        );
+        balance = Number(balanceRows.rows[0]?.balance || 0);
+        
+        // If we found a balance but owner_discord_id is missing, restore it
+        if (balance > 0 && walletAddresses.length > 0) {
+          await dbPool.query(
+            `UPDATE token_holders 
+             SET owner_discord_id = $1, owner_name = $2
+             WHERE wallet_address = ANY($3::text[]) AND owner_discord_id IS NULL`,
+            [req.session.user.discord_id, req.session.user.discord_username || req.session.user.discord_name || null, walletAddresses]
+          );
+        }
+      }
+    }
+    
+    return res.json({ balance });
   } catch (error) {
     console.error('Error fetching user balance:', error);
     return res.status(500).json({ error: 'Internal server error' });
