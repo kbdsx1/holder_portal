@@ -1,14 +1,5 @@
 import { Client, GatewayIntentBits, Partials } from 'discord.js';
-import pkg from 'pg';
-const { Pool } = pkg;
-
-const pool = new Pool({
-  connectionString: process.env.POSTGRES_URL,
-  ssl: {
-    rejectUnauthorized: false,
-    sslmode: 'require'
-  }
-});
+import { pool } from '../../config/database.js';
 
 // Cache roles data
 let rolesCache = null;
