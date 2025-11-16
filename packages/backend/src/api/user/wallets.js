@@ -1,10 +1,29 @@
 import express from 'express';
 import { pool } from '../config/database.js';
+import { parse } from 'cookie';
 
 const router = express.Router();
 
 // GET /api/user/wallets - returns all wallets linked to the current Discord user
 router.get('/', async (req, res) => {
+  // Fallback auth: hydrate session from cookie in serverless
+  if (!req.session?.user) {
+    const cookies = parse(req.headers.cookie || '');
+    if (cookies.discord_user) {
+      try {
+        const user = JSON.parse(cookies.discord_user);
+        req.session = req.session || {};
+        req.session.user = {
+          discord_id: user.id || user.discord_id,
+          discord_username: user.username || user.discord_username,
+          discord_display_name: user.discord_display_name || user.global_name || user.display_name || user.username,
+          avatar: user.avatar || null
+        };
+      } catch {
+        // ignore parse errors
+      }
+    }
+  }
   if (!req.session?.user?.discord_id) {
     return res.status(401).json({ error: 'Not authenticated' });
   }
@@ -23,6 +42,24 @@ router.get('/', async (req, res) => {
 
 // POST /api/user/wallets - add a new wallet for the current Discord user
 router.post('/', async (req, res) => {
+  // Fallback auth: hydrate session from cookie in serverless
+  if (!req.session?.user) {
+    const cookies = parse(req.headers.cookie || '');
+    if (cookies.discord_user) {
+      try {
+        const user = JSON.parse(cookies.discord_user);
+        req.session = req.session || {};
+        req.session.user = {
+          discord_id: user.id || user.discord_id,
+          discord_username: user.username || user.discord_username,
+          discord_display_name: user.discord_display_name || user.global_name || user.display_name || user.username,
+          avatar: user.avatar || null
+        };
+      } catch {
+        // ignore parse errors
+      }
+    }
+  }
   if (!req.session?.user?.discord_id) {
     return res.status(401).json({ error: 'Not authenticated' });
   }

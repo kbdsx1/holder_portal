@@ -1,8 +1,28 @@
 import { pool } from '../config/database.js';
+import { parse } from 'cookie';
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  // Fallback auth: hydrate session from cookie in serverless
+  if (!req.session?.user) {
+    const cookies = parse(req.headers.cookie || '');
+    if (cookies.discord_user) {
+      try {
+        const user = JSON.parse(cookies.discord_user);
+        req.session = req.session || {};
+        req.session.user = {
+          discord_id: user.id || user.discord_id,
+          discord_username: user.username || user.discord_username,
+          discord_display_name: user.discord_display_name || user.global_name || user.display_name || user.username,
+          avatar: user.avatar || null
+        };
+      } catch {
+        // ignore parse errors
+      }
+    }
   }
 
   if (!req.session?.user?.discord_id) {
