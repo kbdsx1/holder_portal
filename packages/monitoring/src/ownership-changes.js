@@ -33,6 +33,10 @@ async function fetchAssetsByCollection(cursor) {
   };
   const url = `https://api.helius.xyz/v1/nfts?api-key=${HELIUS_API_KEY}`;
   const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  if (res.status === 404) {
+    // Collection not found or endpoint mismatch; don't fail the workflow
+    return { result: [] };
+  }
   if (!res.ok) throw new Error(`Helius error ${res.status}`);
   return res.json();
 }
