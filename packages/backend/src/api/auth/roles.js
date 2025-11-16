@@ -25,7 +25,14 @@ export default async function handler(req, res) {
     );
 
     if (userResult.rowCount === 0) {
-      console.log('No roles found for user');
+      console.log('No roles found for user in user_roles, checking collection_counts as fallback');
+      const counts = await client.query(
+        'SELECT total_count FROM collection_counts WHERE discord_id = $1',
+        [discordUser.discord_id]
+      );
+      if (Number(counts.rows[0]?.total_count || 0) > 0) {
+        return res.json({ roles: [{ id: 'holder-local', name: 'Holder', type: 'holder', color: '#22c55e', collection: 'cannasolz', display_name: 'CannaSolz Holder' }] });
+      }
       return res.json({ roles: [] });
     }
 
@@ -144,7 +151,18 @@ export default async function handler(req, res) {
       return res.json({ roles: flatStored });
     }
 
-    return res.json({ roles: eligibleRoles });
+    if (eligibleRoles.length) {
+      return res.json({ roles: eligibleRoles });
+    }
+    // Final fallback: holder if counts > 0
+    const counts = await client.query(
+      'SELECT total_count FROM collection_counts WHERE discord_id = $1',
+      [discordUser.discord_id]
+    );
+    if (Number(counts.rows[0]?.total_count || 0) > 0) {
+      return res.json({ roles: [{ id: 'holder-local', name: 'Holder', type: 'holder', color: '#22c55e', collection: 'cannasolz', display_name: 'CannaSolz Holder' }] });
+    }
+    return res.json({ roles: [] });
 
   } catch (error) {
     console.error('Error fetching user roles:', error);
