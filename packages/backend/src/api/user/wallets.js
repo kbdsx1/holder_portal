@@ -99,8 +99,8 @@ router.post('/', async (req, res) => {
           total_count, last_updated
         )
         SELECT
-          $1 AS discord_id,
-          $2 AS discord_name,
+          $1::varchar AS discord_id,
+          $2::varchar AS discord_name,
           COUNT(*) FILTER (WHERE nm.leaf_colour = 'Gold')        AS gold_count,
           COUNT(*) FILTER (WHERE nm.leaf_colour = 'Silver')      AS silver_count,
           COUNT(*) FILTER (WHERE nm.leaf_colour = 'Purple')      AS purple_count,
@@ -109,7 +109,7 @@ router.post('/', async (req, res) => {
           COUNT(*) AS total_count,
           NOW() AS last_updated
         FROM nft_metadata nm
-        WHERE nm.owner_discord_id = $1
+        WHERE nm.owner_discord_id = $1::varchar
         ON CONFLICT (discord_id) DO UPDATE SET
           discord_name = EXCLUDED.discord_name,
           gold_count = EXCLUDED.gold_count,
