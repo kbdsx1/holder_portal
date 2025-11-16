@@ -23,7 +23,16 @@ const pool = new Pool({
 const runtime = getRuntimeConfig();
 const FRONTEND_URL = runtime.frontendUrl;
 const API_URL = runtime.apiBaseUrl;
-const CALLBACK_URL = `${API_URL}/api/auth/discord/callback`;
+function getOrigin(req) {
+  const proto = (req.headers['x-forwarded-proto'] || req.protocol || 'https').split(',')[0];
+  const host = req.headers['x-forwarded-host'] || req.headers.host;
+  return host ? `${proto}://${host}` : API_URL;
+}
+function getCallbackUrl(req) {
+  const envOverride = process.env.DISCORD_REDIRECT_URI;
+  if (envOverride) return envOverride;
+  return `${getOrigin(req)}/api/auth/discord/callback`;
+}
 const DISCORD_CLIENT_ID = runtime.discord.clientId;
 const DISCORD_CLIENT_SECRET = runtime.discord.clientSecret;
 
@@ -282,7 +291,7 @@ async function handleDiscordAuth(req, res) {
     // Build Discord OAuth URL with required parameters
     const params = new URLSearchParams({
       client_id: DISCORD_CLIENT_ID,
-      redirect_uri: CALLBACK_URL,
+      redirect_uri: getCallbackUrl(req),
       response_type: 'code',
       scope: 'identify guilds.join',
       state: state,
@@ -329,14 +338,15 @@ async function handleDiscordCallback(req, res) {
 
     // Exchange code for token
     console.log('[Discord Callback] Exchanging code for token...');
-    console.log('[Discord Callback] Using callback URL:', CALLBACK_URL);
+    const callbackUrl = getCallbackUrl(req);
+    console.log('[Discord Callback] Using callback URL:', callbackUrl);
     
     const tokenParams = new URLSearchParams({
       client_id: DISCORD_CLIENT_ID,
       client_secret: DISCORD_CLIENT_SECRET,
       grant_type: 'authorization_code',
       code: code,
-      redirect_uri: CALLBACK_URL
+      redirect_uri: callbackUrl
     });
     
     console.log('[Discord Callback] Token request params:', tokenParams.toString());
