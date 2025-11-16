@@ -123,6 +123,9 @@ router.post('/', async (req, res) => {
       [discordId, discordName]
     );
 
+    // Ensure counts are recomputed (in case triggers are not present)
+    await pool.query('SELECT update_collection_counts($1::varchar)', [discordId]);
+
     res.json({ success: true });
   } catch (error) {
     console.error('Error adding user wallet:', error);
