@@ -1,6 +1,6 @@
 import { Connection, PublicKey } from '@solana/web3.js';
 import { TOKEN_PROGRAM_ID } from '@solana/spl-token';
-import { pool } from '../../backend/src/api/config/database.js';
+import dbPool from '../../backend/src/api/config/database.js';
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -57,7 +57,7 @@ async function main() {
     const connection = new Connection(RPC_ENDPOINT, 'confirmed');
     const currentHolders = await getTokenHolders(connection, MINT_ADDRESS);
     console.log(`Found ${currentHolders.length} holders`);
-    client = await pool.connect();
+    client = await dbPool.connect();
     await client.query('BEGIN');
     for (const holder of currentHolders) {
       await client.query(
@@ -66,7 +66,9 @@ async function main() {
          ON CONFLICT (wallet_address) 
          DO UPDATE SET 
            balance = $2,
-           last_updated = CURRENT_TIMESTAMP`,
+           last_updated = CURRENT_TIMESTAMP,
+           owner_discord_id = COALESCE(token_holders.owner_discord_id, EXCLUDED.owner_discord_id),
+           owner_name = COALESCE(token_holders.owner_name, EXCLUDED.owner_name)`,
         [holder.address, holder.balance]
       );
     }

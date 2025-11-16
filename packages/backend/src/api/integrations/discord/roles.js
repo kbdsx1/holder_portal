@@ -1,5 +1,6 @@
 import { Client, GatewayIntentBits, Partials } from 'discord.js';
 import dbPool from '../../config/database.js';
+import fetch from 'node-fetch';
 
 // Cache roles data
 let rolesCache = null;
@@ -56,31 +57,59 @@ async function getDiscordClient() {
       // Login and wait for ready event
       console.log('Attempting Discord bot login...');
       
+      // Check if already ready (race condition protection)
+      if (discordClient.isReady()) {
+        console.log('Discord client already ready');
+        return discordClient;
+      }
+      
       // Set up ready promise before login
+      let readyResolve, readyReject;
       const readyPromise = new Promise((resolve, reject) => {
-        const timeout = setTimeout(() => {
-          reject(new Error('Discord client ready timeout after 15 seconds'));
-        }, 15000);
-        
-        discordClient.once('ready', () => {
-          clearTimeout(timeout);
-          console.log('Discord client ready event received');
-          resolve();
-        });
-        
-        discordClient.once('error', (error) => {
-          clearTimeout(timeout);
-          reject(error);
-        });
+        readyResolve = resolve;
+        readyReject = reject;
       });
       
-      // Start login
-      await discordClient.login(botToken);
-      console.log('Discord login call completed, waiting for ready event...');
+      const timeout = setTimeout(() => {
+        console.error('Discord client ready timeout after 10 seconds');
+        readyReject(new Error('Discord client ready timeout after 10 seconds'));
+      }, 10000);
       
-      // Wait for ready event
-      await readyPromise;
-      console.log('Discord client fully ready and authenticated');
+      const readyHandler = () => {
+        clearTimeout(timeout);
+        console.log('Discord client ready event received');
+        readyResolve();
+      };
+      
+      const errorHandler = (error) => {
+        clearTimeout(timeout);
+        console.error('Discord client error during initialization:', error);
+        readyReject(error);
+      };
+      
+      // Set up listeners BEFORE login
+      discordClient.once('ready', readyHandler);
+      discordClient.once('error', errorHandler);
+      
+      try {
+        // Start login
+        await discordClient.login(botToken);
+        console.log('Discord login call completed, waiting for ready event...');
+        
+        // Wait for ready event
+        await readyPromise;
+        console.log('Discord client fully ready and authenticated');
+      } catch (loginError) {
+        // Clean up listeners if login fails
+        discordClient.removeListener('ready', readyHandler);
+        discordClient.removeListener('error', errorHandler);
+        clearTimeout(timeout);
+        throw loginError;
+      }
+      
+      // Clean up one-time listeners (they should have fired, but just in case)
+      discordClient.removeListener('ready', readyHandler);
+      discordClient.removeListener('error', errorHandler);
     } catch (error) {
       console.error('Failed to initialize Discord client:', error);
       console.error('Error details:', {
@@ -141,8 +170,9 @@ export async function syncUserRoles(discordId, guildId) {
     // Get Discord client
     const discord = await getDiscordClient();
     if (!discord) {
-      console.error('Discord client unavailable - skipping role sync');
-      return false;
+      console.error('Discord client unavailable - attempting REST API fallback');
+      // Fallback to REST API if client fails
+      return await syncUserRolesViaRestAPI(discordId, guildId, userRoles, roles);
     }
     
     // Ensure client is ready
@@ -217,7 +247,7 @@ export async function syncUserRoles(discordId, guildId) {
           await member.roles.add(rolesToAdd);
           console.log(`Successfully added roles for ${discordId}:`, rolesToAdd);
         } catch (error) {
-          console.error('Error adding roles:', error);
+          console.error('Error adding roles via Discord.js:', error);
           console.error('Error details:', {
             message: error.message,
             code: error.code,
@@ -226,7 +256,16 @@ export async function syncUserRoles(discordId, guildId) {
             memberId: discordId,
             guildId: guildId
           });
-          throw error; // Re-throw so caller knows it failed
+          
+          // Fallback: Try REST API directly
+          console.log('Attempting fallback to Discord REST API...');
+          try {
+            await addRolesViaRestAPI(guildId, discordId, rolesToAdd);
+            console.log(`Successfully added roles via REST API for ${discordId}:`, rolesToAdd);
+          } catch (restError) {
+            console.error('REST API fallback also failed:', restError);
+            throw restError;
+          }
         }
       } else {
         console.log(`No roles to add for ${discordId}`);
@@ -252,6 +291,147 @@ export async function syncUserRoles(discordId, guildId) {
   } finally {
     client.release();
   }
+}
+
+// Full sync function using REST API (fallback when Discord.js client fails)
+async function syncUserRolesViaRestAPI(discordId, guildId, userRoles, roles) {
+  console.log(`Syncing roles via REST API for user ${discordId} in guild ${guildId}`);
+  
+  const botToken = process.env.DISCORD_BOT_TOKEN;
+  if (!botToken) {
+    console.error('DISCORD_BOT_TOKEN not set');
+    return false;
+  }
+  
+  try {
+    // Get current member from Discord
+    const memberResponse = await fetch(`https://discord.com/api/v10/guilds/${guildId}/members/${discordId}`, {
+      headers: {
+        'Authorization': `Bot ${botToken}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    if (!memberResponse.ok) {
+      if (memberResponse.status === 404) {
+        console.log(`Member ${discordId} not found in guild ${guildId}`);
+        return false;
+      }
+      const errorText = await memberResponse.text();
+      throw new Error(`Failed to fetch member: ${memberResponse.status} ${errorText}`);
+    }
+    
+    const member = await memberResponse.json();
+    const currentRoles = member.roles || [];
+    console.log('Current member roles:', currentRoles);
+    
+    // Determine which roles to add/remove
+    const rolesToAdd = [];
+    const rolesToRemove = [];
+    const managedRoleIds = roles.map(r => r.discord_role_id);
+    
+    for (const role of roles) {
+      const shouldHaveRole = checkRoleEligibility(userRoles, role);
+      const hasRole = currentRoles.includes(role.discord_role_id);
+      console.log(`Role ${role.name}: Should have - ${shouldHaveRole}, Has role - ${hasRole}`);
+      
+      if (shouldHaveRole && !hasRole) {
+        rolesToAdd.push(role.discord_role_id);
+      } else if (!shouldHaveRole && hasRole && managedRoleIds.includes(role.discord_role_id)) {
+        rolesToRemove.push(role.discord_role_id);
+      }
+    }
+    
+    console.log('Roles to add:', rolesToAdd);
+    console.log('Roles to remove:', rolesToRemove);
+    
+    if (rolesToAdd.length === 0 && rolesToRemove.length === 0) {
+      console.log('No role changes needed');
+      return true;
+    }
+    
+    // Calculate final roles list
+    let finalRoles = [...currentRoles];
+    
+    // Add new roles
+    for (const roleId of rolesToAdd) {
+      if (!finalRoles.includes(roleId)) {
+        finalRoles.push(roleId);
+      }
+    }
+    
+    // Remove roles
+    finalRoles = finalRoles.filter(roleId => !rolesToRemove.includes(roleId));
+    
+    // Update member roles
+    const updateResponse = await fetch(`https://discord.com/api/v10/guilds/${guildId}/members/${discordId}`, {
+      method: 'PATCH',
+      headers: {
+        'Authorization': `Bot ${botToken}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        roles: finalRoles
+      })
+    });
+    
+    if (!updateResponse.ok) {
+      const errorText = await updateResponse.text();
+      throw new Error(`Failed to update roles: ${updateResponse.status} ${errorText}`);
+    }
+    
+    console.log(`Successfully synced roles via REST API for user ${discordId}`);
+    return true;
+  } catch (error) {
+    console.error('Error syncing roles via REST API:', error);
+    return false;
+  }
+}
+
+// Fallback function to add roles via REST API
+async function addRolesViaRestAPI(guildId, userId, roleIds) {
+  const botToken = process.env.DISCORD_BOT_TOKEN;
+  if (!botToken) {
+    throw new Error('DISCORD_BOT_TOKEN not set');
+  }
+  
+  // Get current member roles
+  const memberResponse = await fetch(`https://discord.com/api/v10/guilds/${guildId}/members/${userId}`, {
+    headers: {
+      'Authorization': `Bot ${botToken}`,
+      'Content-Type': 'application/json'
+    }
+  });
+  
+  if (!memberResponse.ok) {
+    const errorText = await memberResponse.text();
+    throw new Error(`Failed to fetch member: ${memberResponse.status} ${errorText}`);
+  }
+  
+  const member = await memberResponse.json();
+  const currentRoles = member.roles || [];
+  
+  // Merge new roles with existing ones
+  const allRoles = [...new Set([...currentRoles, ...roleIds])];
+  
+  // Update member roles
+  const updateResponse = await fetch(`https://discord.com/api/v10/guilds/${guildId}/members/${userId}`, {
+    method: 'PATCH',
+    headers: {
+      'Authorization': `Bot ${botToken}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      roles: allRoles
+    })
+  });
+  
+  if (!updateResponse.ok) {
+    const errorText = await updateResponse.text();
+    throw new Error(`Failed to update roles: ${updateResponse.status} ${errorText}`);
+  }
+  
+  console.log(`Successfully updated roles via REST API for user ${userId}`);
 }
 
 // Helper function to check if user should have a role
