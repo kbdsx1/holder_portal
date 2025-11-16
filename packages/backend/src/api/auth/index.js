@@ -282,11 +282,17 @@ async function handleDiscordAuth(req, res) {
     console.log('[Discord Auth] Generated state:', state);
     
     // Set state cookie first
-    const stateCookie = serialize('discord_state', state, {
-      ...COOKIE_OPTIONS,
-      httpOnly: false,
-      maxAge: 300 // 5 minutes
-    });
+    // Important: make state cookie host-only (no domain) to avoid cross-domain mismatch on Vercel
+    const stateCookieOptions = {
+      path: '/',
+      httpOnly: true,
+      secure: runtime.cookies.secure,
+      // Lax sends cookie on top-level GET navigations (like OAuth callback)
+      sameSite: runtime.cookies.secure ? 'lax' : 'lax',
+      maxAge: 300
+    };
+    console.log('[Discord Auth] State cookie options:', stateCookieOptions, 'cookieDomainRuntime:', runtime.cookies.domain, 'origin:', getOrigin(req));
+    const stateCookie = serialize('discord_state', state, stateCookieOptions);
     
     // Build Discord OAuth URL with required parameters
     const params = new URLSearchParams({
