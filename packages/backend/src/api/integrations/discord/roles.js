@@ -417,7 +417,7 @@ async function addRolesViaRestAPI(guildId, userId, roleIds) {
   const botToken = process.env.DISCORD_BOT_TOKEN;
   if (!botToken) {
     throw new Error('DISCORD_BOT_TOKEN not set');
-  }
+        }
   
   // Get current member roles
   const memberResponse = await fetch(`https://discord.com/api/v10/guilds/${guildId}/members/${userId}`, {
@@ -479,7 +479,7 @@ function checkRoleEligibility(userRoles, role) {
     });
     return hasRole;
   }
-  
+
   console.log(`No roles array found for user, checking eligibility for ${role.name}: false`);
   return false;
 } 
