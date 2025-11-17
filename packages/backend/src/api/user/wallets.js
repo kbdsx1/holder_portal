@@ -96,7 +96,7 @@ userWalletsRouter.post('/', async (req, res) => {
         INSERT INTO collection_counts (
           discord_id, discord_name,
           gold_count, silver_count, purple_count, dark_green_count, light_green_count,
-          total_count, last_updated
+          og420_count, total_count, last_updated
         )
         SELECT
           $1::varchar AS discord_id,
@@ -106,6 +106,7 @@ userWalletsRouter.post('/', async (req, res) => {
           COUNT(*) FILTER (WHERE nm.leaf_colour = 'Purple')      AS purple_count,
           COUNT(*) FILTER (WHERE nm.leaf_colour = 'Dark green')  AS dark_green_count,
           COUNT(*) FILTER (WHERE nm.leaf_colour = 'Light green') AS light_green_count,
+          COUNT(*) FILTER (WHERE nm.og420 = TRUE)                AS og420_count,
           COUNT(*) AS total_count,
           NOW() AS last_updated
         FROM nft_metadata nm
@@ -117,6 +118,7 @@ userWalletsRouter.post('/', async (req, res) => {
           purple_count = EXCLUDED.purple_count,
           dark_green_count = EXCLUDED.dark_green_count,
           light_green_count = EXCLUDED.light_green_count,
+          og420_count = EXCLUDED.og420_count,
           total_count = EXCLUDED.total_count,
           last_updated = NOW()
       `,

@@ -38,7 +38,14 @@ export default async function handler(req, res) {
       const [countsResult, walletsResult] = await Promise.all([
         client.query(
           `
-            SELECT COALESCE(total_count, 0) as total_count
+            SELECT 
+              COALESCE(gold_count, 0) as gold_count,
+              COALESCE(silver_count, 0) as silver_count,
+              COALESCE(purple_count, 0) as purple_count,
+              COALESCE(dark_green_count, 0) as dark_green_count,
+              COALESCE(light_green_count, 0) as light_green_count,
+              COALESCE(og420_count, 0) as og420_count,
+              COALESCE(total_count, 0) as total_count
             FROM collection_counts
             WHERE discord_id = $1
           `,
@@ -54,14 +61,37 @@ export default async function handler(req, res) {
         )
       ]);
 
-      const totalCount = countsResult.rows[0]?.total_count || 0;
+      const counts = countsResult.rows[0] || {};
       const walletAddresses = walletsResult.rows.map(row => row.wallet_address).filter(Boolean);
+
+      // Daily yield rates per NFT
+      const yieldRates = {
+        og420: 50,
+        gold: 30,
+        silver: 25,
+        purple: 20,
+        dark_green: 15,
+        light_green: 10
+      };
+
+      // Calculate daily yield for each color
+      const dailyYields = {
+        og420: (counts.og420_count || 0) * yieldRates.og420,
+        gold: (counts.gold_count || 0) * yieldRates.gold,
+        silver: (counts.silver_count || 0) * yieldRates.silver,
+        purple: (counts.purple_count || 0) * yieldRates.purple,
+        dark_green: (counts.dark_green_count || 0) * yieldRates.dark_green,
+        light_green: (counts.light_green_count || 0) * yieldRates.light_green
+      };
+
+      // Total daily yield
+      const totalDailyYield = Object.values(dailyYields).reduce((sum, yield) => sum + yield, 0);
 
       let nfts = [];
       if (walletAddresses.length > 0) {
         const nftResult = await client.query(
           `
-            SELECT mint_address, name, image_url, leaf_colour
+            SELECT mint_address, name, image_url, leaf_colour, og420
             FROM nft_metadata
             WHERE owner_wallet = ANY($1::text[])
             ORDER BY name NULLS LAST
@@ -74,8 +104,26 @@ export default async function handler(req, res) {
       return res.json({
         collection: {
           name: 'CannaSolz',
-          count: totalCount,
-          daily_yield: 0
+          count: counts.total_count || 0,
+          daily_yield: totalDailyYield
+        },
+        counts: {
+          og420: counts.og420_count || 0,
+          gold: counts.gold_count || 0,
+          silver: counts.silver_count || 0,
+          purple: counts.purple_count || 0,
+          dark_green: counts.dark_green_count || 0,
+          light_green: counts.light_green_count || 0,
+          total: counts.total_count || 0
+        },
+        daily_yields: {
+          og420: dailyYields.og420,
+          gold: dailyYields.gold,
+          silver: dailyYields.silver,
+          purple: dailyYields.purple,
+          dark_green: dailyYields.dark_green,
+          light_green: dailyYields.light_green,
+          total: totalDailyYield
         },
         nfts
       });
