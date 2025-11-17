@@ -44,6 +44,20 @@ export default async function handler(req, res) {
 
     // Helper to check eligibility based on flags/thresholds
     const isEligible = (role) => {
+      // First check if role exists in the roles JSONB array (for CNSZ holder roles and others)
+      if (userRoles.roles && Array.isArray(userRoles.roles)) {
+        const roleIdStr = String(role.discord_role_id);
+        const hasRoleInJsonb = userRoles.roles.some(r => {
+          const rIdStr = String(r.id || '');
+          const idMatch = rIdStr === roleIdStr;
+          const nameMatch = r.name === role.name && r.collection === role.collection;
+          return idMatch || nameMatch;
+        });
+        if (hasRoleInJsonb) {
+          return true;
+        }
+      }
+
       switch (role.type) {
         case 'holder': {
           switch (role.collection) {
@@ -117,7 +131,9 @@ export default async function handler(req, res) {
           }
         }
         case 'token': {
-          if (role.collection === 'bux') {
+          // Token roles are also stored in the roles JSONB array
+          // The JSONB check at the top should handle them, but we also check boolean flags for backwards compatibility
+          if (role.collection === 'bux' || role.collection === 'CNSZ') {
             switch (role.name) {
               case 'BUX Beginner':
                 return !!userRoles.bux_beginner;
@@ -128,9 +144,11 @@ export default async function handler(req, res) {
               case 'BUX Banker':
                 return !!userRoles.bux_banker;
               default:
+                // Token roles are stored in JSONB, so the check at the top should catch them
                 return false;
             }
           }
+          // Token roles are stored in JSONB, so the check at the top should catch them
           return false;
         }
         case 'special': {
@@ -162,7 +180,7 @@ export default async function handler(req, res) {
     }
 
     if (eligibleRoles.length) {
-      return res.json({ roles: eligibleRoles });
+    return res.json({ roles: eligibleRoles });
     }
     // Final fallback: holder if counts > 0
     const counts = await client.query(
