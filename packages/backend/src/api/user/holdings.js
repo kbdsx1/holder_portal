@@ -111,11 +111,11 @@ export default async function handler(req, res) {
 
       // Calculate daily yield for each color (cNFTs)
       const cnftDailyYields = {
-        gold: (Number(cnftCounts.gold_count) || 0) * cnftYieldRates.gold,
-        silver: (Number(cnftCounts.silver_count) || 0) * cnftYieldRates.silver,
-        purple: (Number(cnftCounts.purple_count) || 0) * cnftYieldRates.purple,
-        dark_green: (Number(cnftCounts.dark_green_count) || 0) * cnftYieldRates.dark_green,
-        light_green: (Number(cnftCounts.light_green_count) || 0) * cnftYieldRates.light_green
+        gold: (Number(cnftCounts.gold) || 0) * cnftYieldRates.gold,
+        silver: (Number(cnftCounts.silver) || 0) * cnftYieldRates.silver,
+        purple: (Number(cnftCounts.purple) || 0) * cnftYieldRates.purple,
+        dark_green: (Number(cnftCounts.dark_green) || 0) * cnftYieldRates.dark_green,
+        light_green: (Number(cnftCounts.light_green) || 0) * cnftYieldRates.light_green
       };
 
       // Total daily yield (NFTs + cNFTs)
