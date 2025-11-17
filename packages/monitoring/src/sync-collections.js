@@ -809,7 +809,7 @@ async function syncCollection(pool, collection) {
             console.log(`New NFT ${nft.id} will NOT be OG420 (already at 420 limit)`);
           }
           
-          // New NFT - insert into database
+          // New NFT - insert into database with ON CONFLICT to handle duplicates
           await client.query(
             `INSERT INTO nft_metadata (
               mint_address, 
@@ -826,7 +826,16 @@ async function syncCollection(pool, collection) {
               owner_name,
               lister_discord_name,
               og420
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)`,
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+            ON CONFLICT (mint_address) DO UPDATE SET
+              name = COALESCE(EXCLUDED.name, nft_metadata.name),
+              symbol = COALESCE(nft_metadata.symbol, EXCLUDED.symbol),
+              owner_wallet = EXCLUDED.owner_wallet,
+              image_url = COALESCE(EXCLUDED.image_url, nft_metadata.image_url),
+              og420 = CASE 
+                WHEN nft_metadata.og420 = TRUE THEN TRUE 
+                ELSE EXCLUDED.og420 
+              END`,
             [
               nft.id,
               nft.content.metadata.name,
