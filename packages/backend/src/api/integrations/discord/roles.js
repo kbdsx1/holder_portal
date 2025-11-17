@@ -442,8 +442,12 @@ function checkRoleEligibility(userRoles, role) {
     const roleIdStr = String(role.discord_role_id);
     const hasRole = userRoles.roles.some(r => {
       const rIdStr = String(r.id || '');
-      return rIdStr === roleIdStr || 
-        (r.name === role.name && r.collection === role.collection);
+      const idMatch = rIdStr === roleIdStr;
+      const nameMatch = r.name === role.name && r.collection === role.collection;
+      if (idMatch || nameMatch) {
+        console.log(`Role match found for ${role.name}:`, { idMatch, nameMatch, rIdStr, roleIdStr, rName: r.name, roleName: role.name });
+      }
+      return idMatch || nameMatch;
     });
     console.log(`Checking eligibility for ${role.name} (${role.discord_role_id}): ${hasRole}`, {
       userRolesArray: userRoles.roles.map(r => ({ id: r.id, name: r.name, collection: r.collection })),
