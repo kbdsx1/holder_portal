@@ -28,6 +28,18 @@ async function processDailyRewards() {
 
     console.log('Connected to database. Processing daily rewards...');
 
+    // First, ensure claim_accounts exists for all users with daily_rewards
+    const createResult = await client.query(`
+      INSERT INTO claim_accounts (discord_id, discord_name, unclaimed_amount)
+      SELECT dr.discord_id, dr.discord_name, 0
+      FROM daily_rewards dr
+      WHERE NOT EXISTS (
+        SELECT 1 FROM claim_accounts ca WHERE ca.discord_id = dr.discord_id
+      )
+      AND dr.total_daily_reward > 0
+    `);
+    console.log(`Created ${createResult.rowCount} new claim accounts`);
+
     // Update claim_accounts with the current daily rewards from daily_rewards table
     const updateResult = await client.query(`
       UPDATE claim_accounts ca
@@ -52,7 +64,7 @@ async function processDailyRewards() {
     const statsData = stats.rows[0];
     console.log('\n=== DAILY REWARDS PROCESSING COMPLETE ===');
     console.log(`Processed Count: ${statsData.processed_count}`);
-    console.log(`Total Rewards Distributed: ${statsData.total_rewards} BUX`);
+    console.log(`Total Rewards Distributed: ${statsData.total_rewards} $CSz420`);
     console.log(`Timestamp: ${new Date().toISOString()}`);
     console.log('==========================================\n');
 

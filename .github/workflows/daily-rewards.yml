@@ -1,0 +1,27 @@
+name: Daily Rewards Accumulation
+
+on:
+  schedule:
+    - cron: '0 0 * * *'  # Run daily at midnight UTC
+  workflow_dispatch: {}  # Allow manual trigger
+
+jobs:
+  accumulate-rewards:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - name: Install
+        run: npm ci
+      - name: Process Daily Rewards
+        working-directory: packages/monitoring
+        env:
+          POSTGRES_URL: ${{ secrets.POSTGRES_URL }}
+        run: node src/process-daily-rewards.js
+
