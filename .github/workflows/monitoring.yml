@@ -43,5 +43,20 @@ jobs:
           DISCORD_GUILD_ID: ${{ secrets.DISCORD_GUILD_ID }}
           DISCORD_ACTIVITY_CHANNEL_ID: ${{ secrets.DISCORD_ACTIVITY_CHANNEL_ID }}
         run: node src/sync-collections.js
-
+      - name: Sync cNFT collections
+        working-directory: packages/monitoring
+        env:
+          POSTGRES_URL: ${{ secrets.POSTGRES_URL }}
+          HELIUS_API_KEY: ${{ secrets.HELIUS_API_KEY }}
+          DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
+          DISCORD_GUILD_ID: ${{ secrets.DISCORD_GUILD_ID }}
+          DISCORD_ACTIVITY_CHANNEL_ID: ${{ secrets.DISCORD_ACTIVITY_CHANNEL_ID }}
+        run: node src/sync-cnft-collections.js
+      - name: Sync Discord roles
+        working-directory: packages/monitoring
+        env:
+          POSTGRES_URL: ${{ secrets.POSTGRES_URL }}
+          DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
+          DISCORD_GUILD_ID: ${{ secrets.DISCORD_GUILD_ID }}
+        run: npm run sync-roles
 
