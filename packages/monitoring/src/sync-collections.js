@@ -739,7 +739,9 @@ async function syncCollection(pool, collection) {
     summary.nftsFound = collectionNFTs.length;
     
     // Get current database state for this collection
-    console.log(`Fetching database state for ${collection.name}...`);
+    // Use collection.symbol if available, otherwise fall back to collection.name
+    const collectionSymbol = collection.symbol || collection.name;
+    console.log(`Fetching database state for ${collection.name} (symbol: ${collectionSymbol})...`);
     const { rows: dbNFTs } = await client.query(
       `SELECT 
         mint_address, 
@@ -758,7 +760,7 @@ async function syncCollection(pool, collection) {
         lister_discord_name
       FROM nft_metadata 
       WHERE symbol = $1`,
-      [collection.name]
+      [collectionSymbol]
     );
     
     // Update summary with DB counts
@@ -793,9 +795,10 @@ async function syncCollection(pool, collection) {
           });
         } else {
           // Check current OG420 count to determine if this new NFT should be OG420
+          const collectionSymbol = collection.symbol || collection.name;
           const og420CountResult = await client.query(
             `SELECT COUNT(*) as count FROM nft_metadata WHERE symbol = $1 AND og420 = TRUE`,
-            [collection.name]
+            [collectionSymbol]
           );
           const currentOg420Count = parseInt(og420CountResult.rows[0]?.count || 0);
           const isOg420 = currentOg420Count < 420;
@@ -827,7 +830,7 @@ async function syncCollection(pool, collection) {
             [
               nft.id,
               nft.content.metadata.name,
-              collection.name,
+              collectionSymbol,
               nft.ownership.owner,
               nft.content.links.image,
               null,
