@@ -569,6 +569,23 @@ async function updateUserRoles(pool) {
     
     console.log(`   ✅ Updated daily_rewards for all users with cNFT holdings`);
     
+    // Rebuild roles JSONB for all users with harvester flags
+    console.log(`\n   🔄 Rebuilding roles JSONB for users with harvester flags...`);
+    const usersToRebuild = await client.query(
+      `SELECT DISTINCT discord_id FROM user_roles 
+       WHERE harvester_gold = TRUE 
+          OR harvester_silver = TRUE 
+          OR harvester_purple = TRUE 
+          OR harvester_dark_green = TRUE 
+          OR harvester_light_green = TRUE`
+    );
+    
+    for (const row of usersToRebuild.rows) {
+      await client.query('SELECT rebuild_user_roles($1::varchar)', [row.discord_id]);
+    }
+    
+    console.log(`   ✅ Rebuilt roles JSONB for ${usersToRebuild.rows.length} users`);
+    
   } catch (error) {
     console.error(`   ❌ Error updating user roles:`, error);
     throw error;
