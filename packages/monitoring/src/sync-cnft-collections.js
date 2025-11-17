@@ -531,7 +531,7 @@ async function updateUserRoles(pool) {
             COALESCE(purple_count, 0) * 20 +
             COALESCE(dark_green_count, 0) * 15 +
             COALESCE(light_green_count, 0) * 10 +
-            COALESCE(og420_count, 0) * 50 as nft_reward
+            COALESCE(og420_count, 0) * 20 as nft_reward
           FROM collection_counts WHERE discord_id = $1`,
           [discordId]
         );
@@ -552,7 +552,7 @@ async function updateUserRoles(pool) {
             COALESCE(purple_count, 0) * 20 +
             COALESCE(dark_green_count, 0) * 15 +
             COALESCE(light_green_count, 0) * 10 +
-            COALESCE(og420_count, 0) * 50 as nft_reward
+            COALESCE(og420_count, 0) * 20 as nft_reward
           FROM collection_counts WHERE discord_id = $1`,
           [discordId]
         );

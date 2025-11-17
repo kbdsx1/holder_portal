@@ -82,7 +82,7 @@ export default async function handler(req, res) {
 
       // Daily yield rates per NFT (regular NFTs)
       const yieldRates = {
-        og420: 50,
+        og420: 20,
         gold: 30,
         silver: 25,
         purple: 20,
