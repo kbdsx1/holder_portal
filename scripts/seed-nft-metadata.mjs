@@ -165,6 +165,14 @@ async function upsertAsset(client, asset, listingInfo) {
   const files = asset.content?.files || [];
   const imageUrl = metadata?.image || files.find((file) => file?.cdn_uri || file?.uri)?.cdn_uri || files.find((file) => file?.uri)?.uri || null;
 
+  // Check current OG420 count to determine if this new NFT should be OG420
+  const og420CountResult = await client.query(
+    `SELECT COUNT(*) as count FROM nft_metadata WHERE symbol = $1 AND og420 = TRUE`,
+    [metadata.symbol || asset.content?.metadata?.symbol || asset.symbol || 'CNSZ']
+  );
+  const currentOg420Count = parseInt(og420CountResult.rows[0]?.count || 0);
+  const isOg420 = currentOg420Count < 420;
+  
   const query = `
     INSERT INTO nft_metadata (
       mint_address,
@@ -179,9 +187,10 @@ async function upsertAsset(client, asset, listingInfo) {
       list_price,
       last_sale_price,
       marketplace,
-      rarity_rank
+      rarity_rank,
+      og420
     ) VALUES (
-      $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13
+      $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14
     )
     ON CONFLICT (mint_address) DO UPDATE SET
       name = EXCLUDED.name,
@@ -196,6 +205,7 @@ async function upsertAsset(client, asset, listingInfo) {
       last_sale_price = EXCLUDED.last_sale_price,
       marketplace = EXCLUDED.marketplace,
       rarity_rank = EXCLUDED.rarity_rank
+      -- Note: og420 is NOT updated on conflict to preserve original OG420 status
   `;
 
   const values = [
@@ -211,7 +221,8 @@ async function upsertAsset(client, asset, listingInfo) {
     listingInfo.listPrice,
     listingInfo.lastSalePrice,
     listingInfo.marketplace,
-    asset.rarity?.rank || null
+    asset.rarity?.rank || null,
+    isOg420
   ];
 
   await client.query(query, values);

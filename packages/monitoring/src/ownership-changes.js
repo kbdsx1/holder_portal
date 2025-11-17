@@ -93,13 +93,21 @@ async function run() {
         const image = a?.image || a?.content?.links?.image;
         if (!mint || !owner) continue;
 
-        const { rows } = await client.query('SELECT owner_wallet, name FROM nft_metadata WHERE mint_address = $1', [mint]);
+        const { rows } = await client.query('SELECT owner_wallet, name, symbol FROM nft_metadata WHERE mint_address = $1', [mint]);
         const current = rows[0];
         if (!current) {
+          // Check current OG420 count to determine if this new NFT should be OG420
+          // Default to 'CNSZ' for CannaSolz collection
+          const og420CountResult = await client.query(
+            `SELECT COUNT(*) as count FROM nft_metadata WHERE symbol = 'CNSZ' AND og420 = TRUE`
+          );
+          const currentOg420Count = parseInt(og420CountResult.rows[0]?.count || 0);
+          const isOg420 = currentOg420Count < 420;
+          
           // Insert minimal row so next runs track it
           await client.query(
-            'INSERT INTO nft_metadata (mint_address, name, owner_wallet, owner_discord_id, owner_name) VALUES ($1, $2, $3, NULL, NULL) ON CONFLICT (mint_address) DO NOTHING',
-            [mint, name || null, owner]
+            'INSERT INTO nft_metadata (mint_address, name, owner_wallet, owner_discord_id, owner_name, symbol, og420) VALUES ($1, $2, $3, NULL, NULL, $4, $5) ON CONFLICT (mint_address) DO NOTHING',
+            [mint, name || null, owner, 'CNSZ', isOg420]
           );
           continue;
         }
