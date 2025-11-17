@@ -143,7 +143,9 @@ const UserProfile = () => {
               count: holdingsData.collection?.count || 0,
               dailyYield: holdingsData.collection?.daily_yield || 0
             },
-            nfts: holdingsData.nfts || []
+            nfts: holdingsData.nfts || [],
+            counts: holdingsData.counts || {},
+            dailyYields: holdingsData.daily_yields || {}
           }));
         } else {
           console.error('Failed to fetch holdings:', await holdingsResponse.text());
@@ -353,31 +355,38 @@ const UserProfile = () => {
                 </thead>
                 <tbody>
                   {(() => {
-                    const order = ['Gold', 'Silver', 'Purple', 'Dark green', 'Light green'];
-                    const counts = userData.nfts.reduce((acc, nft) => {
-                      const colour = nft?.leaf_colour || nft?.leafColor || nft?.leaf_colour_name;
-                      if (!acc[colour]) acc[colour] = 0;
-                      acc[colour] += 1;
-                      return acc;
-                    }, {});
-                    const totalCount = order.reduce((sum, colour) => sum + (counts[colour] || 0), 0);
-                    const rows = order.map((colour) => ({
-                      colour,
-                      count: counts[colour] || 0
-                    }));
+                    // Use API counts if available, otherwise fall back to counting NFTs
+                    const counts = userData.counts || {};
+                    const dailyYields = userData.dailyYields || {};
+                    
+                    // Define row order with OG420 first
+                    const rows = [
+                      { key: 'og420', label: 'OG420', count: counts.og420 || 0, yield: dailyYields.og420 || 0 },
+                      { key: 'gold', label: 'Gold', count: counts.gold || 0, yield: dailyYields.gold || 0 },
+                      { key: 'silver', label: 'Silver', count: counts.silver || 0, yield: dailyYields.silver || 0 },
+                      { key: 'purple', label: 'Purple', count: counts.purple || 0, yield: dailyYields.purple || 0 },
+                      { key: 'dark_green', label: 'Dark green', count: counts.dark_green || 0, yield: dailyYields.dark_green || 0 },
+                      { key: 'light_green', label: 'Light green', count: counts.light_green || 0, yield: dailyYields.light_green || 0 }
+                    ];
+                    
+                    const totalCount = counts.total || rows.reduce((sum, row) => sum + row.count, 0);
+                    const totalYield = dailyYields.total || userData.primaryCollection.dailyYield || 0;
+                    
                     return (
                       <>
                         {rows.map((row) => (
-                          <tr key={row.colour}>
-                            <td className="py-3">{row.colour}</td>
+                          <tr key={row.key}>
+                            <td className="py-3">{row.label}</td>
                             <td className="py-3 text-center">{row.count}</td>
-                            <td className="py-3 text-center">—</td>
+                            <td className="py-3 text-center">
+                              {row.yield > 0 ? Number(row.yield).toFixed(2) : '—'}
+                            </td>
                           </tr>
                         ))}
                         <tr className="border-t border-fuchsia-500/30">
                           <td className="py-3 font-semibold">Total</td>
                           <td className="py-3 text-center font-semibold">{totalCount}</td>
-                          <td className="py-3 text-center font-semibold">{Number(userData.primaryCollection.dailyYield || 0).toFixed(2)}</td>
+                          <td className="py-3 text-center font-semibold">{Number(totalYield).toFixed(2)}</td>
                         </tr>
                       </>
                     );
