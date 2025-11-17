@@ -2,7 +2,6 @@
 import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
-import { Connection } from '@solana/web3.js';
 import pkg from 'pg';
 const { Pool } = pkg;
 import axios from 'axios';
@@ -32,7 +31,7 @@ function getMarketplaceName(address) {
 }
 
 // Function to fetch all NFTs in the collection
-async function fetchCollectionNFTs(connection, collection) {
+async function fetchCollectionNFTs(collection) {
   try {
     if (!process.env.HELIUS_API_KEY) {
       throw new Error('HELIUS_API_KEY environment variable is not set');
@@ -702,7 +701,7 @@ function formatDiscordMessage(data) {
 }
 
 // Main sync function for a single collection
-async function syncCollection(connection, pool, collection) {
+async function syncCollection(pool, collection) {
   console.log(`\n=== Starting ${collection.name} NFT ownership sync ===`);
   
   if (TEST_MODE) {
@@ -728,7 +727,7 @@ async function syncCollection(connection, pool, collection) {
   try {
     // Fetch all NFTs in the collection
     console.log(`Fetching NFTs for ${collection.name}...`);
-    const collectionNFTs = await fetchCollectionNFTs(connection, collection);
+    const collectionNFTs = await fetchCollectionNFTs(collection);
     console.log(`Found ${collectionNFTs.length} NFTs in ${collection.name}`);
     
     if (collectionNFTs.length === 0) {
@@ -1087,11 +1086,10 @@ export default async function syncAllCollections() {
     console.log('\n=== RUNNING IN TEST MODE - NO DATABASE CHANGES WILL BE MADE ===\n');
   }
 
-  const connection = new Connection(process.env.QUICKNODE_RPC_URL, {
-    commitment: 'confirmed',
-    confirmTransactionInitialTimeout: 60000,
-    disableRetryOnRateLimit: false,
-  });
+  // Verify Helius API key is set
+  if (!process.env.HELIUS_API_KEY) {
+    throw new Error('HELIUS_API_KEY environment variable is required');
+  }
 
   const pool = new Pool({
     connectionString: process.env.POSTGRES_URL,
@@ -1103,9 +1101,10 @@ export default async function syncAllCollections() {
   try {
     console.log('\n=== Starting Generic NFT Collections Sync ===');
     console.log(`Processing ${collections.length} collections...`);
+    console.log(`Using Helius API for NFT fetching`);
     
     for (const collection of collections) {
-      await syncCollection(connection, pool, collection);
+      await syncCollection(pool, collection);
       // Add delay between collections to avoid overwhelming the system
       await new Promise(resolve => setTimeout(resolve, 1000));
     }
