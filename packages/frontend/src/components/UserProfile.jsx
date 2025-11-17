@@ -349,7 +349,7 @@ const UserProfile = () => {
                     <th className="py-2 text-fuchsia-300 text-center">Count</th>
                     <th className="py-2 text-fuchsia-300 text-center">
                       <div>Daily Yield</div>
-                      <div className="text-xs opacity-80">($CBz420)</div>
+                      <div className="text-xs opacity-80">($CSz420)</div>
                     </th>
                   </tr>
                 </thead>

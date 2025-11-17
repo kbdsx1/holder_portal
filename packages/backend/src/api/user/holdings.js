@@ -85,7 +85,7 @@ export default async function handler(req, res) {
       };
 
       // Total daily yield
-      const totalDailyYield = Object.values(dailyYields).reduce((sum, yield) => sum + yield, 0);
+      const totalDailyYield = Object.values(dailyYields).reduce((sum, dailyYield) => sum + dailyYield, 0);
 
       let nfts = [];
       if (walletAddresses.length > 0) {
