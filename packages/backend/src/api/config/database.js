@@ -32,10 +32,10 @@ console.log('Initializing database connection pool...', {
 let pool = globalThis.__CANNASOLZ_DB_POOL;
 if (!pool) {
   pool = new Pool({
-    connectionString,
-    ssl: process.env.NODE_ENV === 'production' ? {
-      rejectUnauthorized: false
-    } : false,
+  connectionString,
+  ssl: process.env.NODE_ENV === 'production' ? {
+    rejectUnauthorized: false
+  } : false,
     max: 10,
     min: 0,
     idleTimeoutMillis: 30000,
@@ -52,31 +52,31 @@ if (!pool) {
 
 // Attach listeners only once
 if (!globalThis.__CANNASOLZ_DB_POOL_LISTENERS_ATTACHED) {
-  // Add pool error handler with reconnection logic
-  pool.on('error', (err, client) => {
-    console.error('Unexpected error on idle client', err);
+// Add pool error handler with reconnection logic
+pool.on('error', (err, client) => {
+  console.error('Unexpected error on idle client', err);
     if (err.code === '25P03') {
-      try {
-        client.query('ROLLBACK');
-      } catch (rollbackError) {
-        console.error('Error rolling back timed out transaction:', rollbackError);
-      }
+    try {
+      client.query('ROLLBACK');
+    } catch (rollbackError) {
+      console.error('Error rolling back timed out transaction:', rollbackError);
     }
+  }
+});
+// Add pool connect handler with logging
+pool.on('connect', client => {
+  console.log('New client connected to pool');
+  client.query(`
+    SET statement_timeout = 10000;
+    SET idle_in_transaction_session_timeout = 10000;
+    SET lock_timeout = 5000;
+    SET tcp_keepalives_idle = 30;
+    SET tcp_keepalives_interval = 5;
+    SET tcp_keepalives_count = 3;
+  `).catch(err => {
+    console.error('Error configuring client session:', err);
   });
-  // Add pool connect handler with logging
-  pool.on('connect', client => {
-    console.log('New client connected to pool');
-    client.query(`
-      SET statement_timeout = 10000;
-      SET idle_in_transaction_session_timeout = 10000;
-      SET lock_timeout = 5000;
-      SET tcp_keepalives_idle = 30;
-      SET tcp_keepalives_interval = 5;
-      SET tcp_keepalives_count = 3;
-    `).catch(err => {
-      console.error('Error configuring client session:', err);
-    });
-  });
+});
   // Add pool acquire/remove handlers
   pool.on('acquire', () => console.log('Client acquired from pool'));
   pool.on('remove', () => console.log('Client removed from pool'));

@@ -397,7 +397,7 @@ async function syncUserRolesViaRestAPI(discordId, guildId, userRoles, roles) {
         finalRolesCount: finalRoles.length
       });
       throw new Error(`Failed to update roles: ${updateResponse.status} ${errorText}`);
-    }
+      }
     
     const updatedMember = await updateResponse.json().catch(() => null);
     console.log(`Successfully synced roles via REST API for user ${discordId}`, {
@@ -462,7 +462,7 @@ async function addRolesViaRestAPI(guildId, userId, roleIds) {
 function checkRoleEligibility(userRoles, role) {
   // Check harvester roles (using 'holder' type) based on boolean flags (1 cNFT = role)
   if (role.type === 'holder' && role.collection?.startsWith('seedling_')) {
-    switch (role.collection) {
+      switch (role.collection) {
       case 'seedling_gold':
         return !!userRoles.harvester_gold;
       case 'seedling_silver':

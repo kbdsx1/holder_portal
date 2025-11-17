@@ -37,12 +37,12 @@ export const UserProvider = ({ children }) => {
           headers: { 'Accept': 'application/json' }
         }).then(r => r.ok ? r.json() : {}).catch(() => ({}));
         const [rolesData, claimData] = await Promise.all([rolesPromise, claimPromise]);
-        setDiscordUser({
-          ...data.user,
+          setDiscordUser({
+            ...data.user,
           roles: rolesData.roles || [],
           discord_roles: rolesData.roles || [],
           token_balance: Number(claimData.balance || 0).toFixed(2)
-        });
+          });
       } else {
         setDiscordUser(null);
       }
