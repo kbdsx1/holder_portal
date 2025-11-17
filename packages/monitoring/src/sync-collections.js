@@ -8,6 +8,7 @@ const { Pool } = pkg;
 import axios from 'axios';
 import collections from './collections.config.js';
 import { sendActivityNotification } from './api/integrations/discord/notifications.js';
+import { syncUserRoles } from '../../backend/src/api/integrations/discord/roles.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -1021,6 +1022,65 @@ async function syncCollection(connection, pool, collection) {
   }
 }
 
+// Function to sync Discord roles for all users
+async function syncAllUserRoles(pool) {
+  const client = await pool.connect();
+  try {
+    console.log('Fetching all users with Discord IDs...');
+    const result = await client.query(
+      'SELECT discord_id FROM user_roles WHERE discord_id IS NOT NULL'
+    );
+    
+    const totalUsers = result.rows.length;
+    console.log(`Found ${totalUsers} users to sync roles for`);
+    
+    if (totalUsers === 0) {
+      console.log('No users found, skipping role sync');
+      return;
+    }
+    
+    const guildId = process.env.DISCORD_GUILD_ID;
+    if (!guildId) {
+      console.error('DISCORD_GUILD_ID not set, skipping role sync');
+      return;
+    }
+    
+    let successCount = 0;
+    let failCount = 0;
+    
+    for (let i = 0; i < result.rows.length; i++) {
+      const { discord_id } = result.rows[i];
+      try {
+        const success = await syncUserRoles(discord_id, guildId);
+        if (success) {
+          successCount++;
+        } else {
+          failCount++;
+          console.error(`Failed to sync roles for user ${discord_id}`);
+        }
+        
+        // Log progress every 10 users
+        if ((i + 1) % 10 === 0) {
+          console.log(`Role sync progress: ${i + 1}/${totalUsers} users processed (${successCount} success, ${failCount} failed)`);
+        }
+        
+        // Add delay between users to avoid rate limits
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      } catch (error) {
+        failCount++;
+        console.error(`Error syncing roles for user ${discord_id}:`, error.message);
+      }
+    }
+    
+    console.log(`\nRole sync summary: ${successCount} successful, ${failCount} failed out of ${totalUsers} total users`);
+  } catch (error) {
+    console.error('Error in syncAllUserRoles:', error);
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
 // Main function to sync all collections
 export default async function syncAllCollections() {
   if (TEST_MODE) {
@@ -1051,6 +1111,19 @@ export default async function syncAllCollections() {
     }
     
     console.log('\n=== All collections sync completed successfully ===');
+    
+    // Sync Discord roles for all users after collection sync
+    if (!TEST_MODE) {
+      console.log('\n=== Starting Discord role sync for all users ===');
+      try {
+        await syncAllUserRoles(pool);
+        console.log('=== Discord role sync completed ===');
+      } catch (error) {
+        console.error('Error during Discord role sync:', error);
+        // Don't throw - allow collection sync to be considered successful
+      }
+    }
+    
     if (TEST_MODE) {
       console.log('\n=== TEST MODE COMPLETED - NO CHANGES WERE MADE ===');
     }
