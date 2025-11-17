@@ -34,5 +34,15 @@ jobs:
           DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
           DISCORD_ACTIVITY_CHANNEL_ID: ${{ secrets.DISCORD_ACTIVITY_CHANNEL_ID }}
         run: npm run ownership-changes
+      - name: Sync NFT collections and Discord roles
+        working-directory: packages/monitoring
+        env:
+          POSTGRES_URL: ${{ secrets.POSTGRES_URL }}
+          HELIUS_API_KEY: ${{ secrets.HELIUS_API_KEY }}
+          QUICKNODE_RPC_URL: ${{ secrets.QUICKNODE_RPC_URL }}
+          DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
+          DISCORD_GUILD_ID: ${{ secrets.DISCORD_GUILD_ID }}
+          DISCORD_ACTIVITY_CHANNEL_ID: ${{ secrets.DISCORD_ACTIVITY_CHANNEL_ID }}
+        run: node src/sync-collections.js
 
 
