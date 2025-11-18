@@ -238,6 +238,25 @@ userClaimRouter.post('/', async (req, res) => {
       return res.status(400).json({ error: 'Missing required parameters' });
     }
 
+    // Fallback auth: hydrate session from cookie in serverless
+    if (!req.session?.user) {
+      const cookies = parse(req.headers.cookie || '');
+      if (cookies.discord_user) {
+        try {
+          const user = JSON.parse(cookies.discord_user);
+          req.session = req.session || {};
+          req.session.user = {
+            discord_id: user.id || user.discord_id,
+            discord_username: user.username || user.discord_username,
+            discord_display_name: user.discord_display_name || user.global_name || user.display_name || user.username,
+            avatar: user.avatar || null
+          };
+        } catch {
+          // ignore parse errors
+        }
+      }
+    }
+
     // Check if user is authenticated
     if (!req.session?.user?.discord_id) {
       return res.status(401).json({ error: 'Not authenticated' });
@@ -536,6 +555,29 @@ userClaimRouter.post('/finalize', async (req, res) => {
   let client;
 
   try {
+    // Fallback auth: hydrate session from cookie in serverless
+    if (!req.session?.user) {
+      const cookies = parse(req.headers.cookie || '');
+      if (cookies.discord_user) {
+        try {
+          const user = JSON.parse(cookies.discord_user);
+          req.session = req.session || {};
+          req.session.user = {
+            discord_id: user.id || user.discord_id,
+            discord_username: user.username || user.discord_username,
+            discord_display_name: user.discord_display_name || user.global_name || user.display_name || user.username,
+            avatar: user.avatar || null
+          };
+        } catch {
+          // ignore parse errors
+        }
+      }
+    }
+
+    if (!req.session?.user?.discord_id) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+
     client = await dbPool.connect();
     await client.query('BEGIN');
 
