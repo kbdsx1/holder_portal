@@ -72,15 +72,19 @@ const BuxClaimButton = ({
         instructions: tx.instructions.length,
         signatures: tx.signatures.length,
         feePayer: tx.feePayer?.toString(),
-        recentBlockhash: tx.recentBlockhash
+        recentBlockhash: tx.recentBlockhash,
+        walletConnected: connected,
+        publicKey: publicKey?.toString()
       });
       
       // Request signature from wallet - use wallet object directly like UserProfile does
+      // This should open the wallet prompt
+      console.log('Calling wallet.signTransaction - wallet should prompt now...');
       const signedTx = await wallet.signTransaction(tx);
       if (!signedTx) {
         throw new Error('Failed to sign transaction - wallet did not return signed transaction');
       }
-      console.log('Transaction signed by wallet');
+      console.log('Transaction signed by wallet successfully');
 
       const finalizeResponse = await fetch(`${API_BASE_URL}/api/user/claim/finalize`, {
         method: 'POST',
@@ -116,13 +120,19 @@ const BuxClaimButton = ({
     } finally {
       setIsLoading(false);
     }
-  }, [publicKey, signTransaction, amount, onSuccess, onError]);
+  }, [publicKey, signTransaction, amount, onSuccess, onError, connection, wallet]);
 
   // If wallet gets connected after we opened the modal, proceed with claim
   useEffect(() => {
     if (connected && publicKey && signTransaction && pendingClaimRef.current && amount > 0) {
-      pendingClaimRef.current = false;
-      processClaim();
+      // Wait a moment for wallet to be fully ready
+      const timer = setTimeout(() => {
+        pendingClaimRef.current = false;
+        console.log('Wallet connected, proceeding with claim...');
+        processClaim();
+      }, 500);
+      
+      return () => clearTimeout(timer);
     }
   }, [connected, publicKey, signTransaction, amount, processClaim]);
 
