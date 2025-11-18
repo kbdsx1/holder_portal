@@ -74,17 +74,11 @@ const BuxClaimButton = ({
         feePayer: tx.feePayer?.toString(),
         recentBlockhash: tx.recentBlockhash,
         walletConnected: connected,
-        publicKey: publicKey?.toString(),
-        walletReady: wallet.ready,
-        adapterName: wallet.adapter?.name
+        publicKey: publicKey?.toString()
       });
       
-      // Ensure wallet adapter is ready
-      if (!wallet.ready || !wallet.adapter) {
-        throw new Error('Wallet is not ready. Please try again.');
-      }
-      
       // Request signature from wallet - this should open the wallet prompt
+      // If connected, publicKey, and signTransaction are all truthy, wallet is ready
       console.log('Calling signTransaction - wallet should prompt now...');
       const signedTx = await signTransaction(tx);
       if (!signedTx) {
