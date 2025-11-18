@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { useWallet } from '@solana/wallet-adapter-react';
+import { useWallet, useConnection } from '@solana/wallet-adapter-react';
 import { useWalletModal } from '@solana/wallet-adapter-react-ui';
 import { Transaction } from '@solana/web3.js';
 import { Buffer } from 'buffer';
@@ -15,6 +15,7 @@ const BuxClaimButton = ({
   unclaimedAmount = 0
 }) => {
   const { publicKey, signTransaction, connected } = useWallet();
+  const connection = useConnection();
   const { setVisible } = useWalletModal();
   const [isLoading, setIsLoading] = useState(false);
   const pendingClaimRef = useRef(false);
@@ -52,8 +53,24 @@ const BuxClaimButton = ({
         throw new Error('No transaction received from backend');
       }
 
+      console.log('Deserializing transaction...');
       const tx = Transaction.from(Buffer.from(serializedTx, 'base64'));
+      
+      // Ensure transaction has recent blockhash for wallet display
+      if (!tx.recentBlockhash) {
+        const { blockhash } = await connection.connection.getLatestBlockhash('confirmed');
+        tx.recentBlockhash = blockhash;
+      }
+      
+      console.log('Requesting wallet signature...', {
+        instructions: tx.instructions.length,
+        signatures: tx.signatures.length,
+        feePayer: tx.feePayer?.toString()
+      });
+      
+      // Request signature from wallet - this should open the wallet prompt
       const signedTx = await signTransaction(tx);
+      console.log('Transaction signed by wallet');
 
       const finalizeResponse = await fetch(`${API_BASE_URL}/api/user/claim/finalize`, {
         method: 'POST',
