@@ -54,7 +54,8 @@ userClaimRouter.get('/', async (req, res) => {
     );
     const payload = {
       ...result.rows[0],
-      balance: Number(balanceResult.rows[0]?.balance || 0)
+      balance: Number(balanceResult.rows[0]?.balance || 0),
+      claimsEnabled: !claimsDisabled
     };
     return res.json(payload);
   } catch (error) {
