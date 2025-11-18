@@ -28,6 +28,30 @@ async function processDailyRewards() {
 
     console.log('Connected to database. Processing daily rewards...');
 
+    // Check if rewards were already processed today (prevent double processing)
+    const todayStart = new Date();
+    todayStart.setUTCHours(0, 0, 0, 0);
+    const todayEnd = new Date(todayStart);
+    todayEnd.setUTCDate(todayEnd.getUTCDate() + 1);
+
+    const alreadyProcessed = await client.query(`
+      SELECT COUNT(*) as count
+      FROM daily_rewards
+      WHERE last_accumulated_at >= $1
+      AND last_accumulated_at < $2
+      AND total_daily_reward > 0
+    `, [todayStart.toISOString(), todayEnd.toISOString()]);
+
+    if (Number(alreadyProcessed.rows[0]?.count || 0) > 0) {
+      console.log(`⚠️  Rewards already processed today (${alreadyProcessed.rows[0].count} users). Skipping to prevent double payment.`);
+      await client.query('ROLLBACK');
+      return {
+        success: true,
+        message: 'Rewards already processed today - skipped to prevent double payment',
+        skipped: true
+      };
+    }
+
     // First, ensure claim_accounts exists for all users with daily_rewards
     const createResult = await client.query(`
       INSERT INTO claim_accounts (discord_id, discord_name, unclaimed_amount)
@@ -41,6 +65,7 @@ async function processDailyRewards() {
     console.log(`Created ${createResult.rowCount} new claim accounts`);
 
     // Update claim_accounts with the current daily rewards from daily_rewards table
+    // Also update last_accumulated_at to prevent double processing
     const updateResult = await client.query(`
       UPDATE claim_accounts ca
       SET unclaimed_amount = unclaimed_amount + dr.total_daily_reward
@@ -49,6 +74,14 @@ async function processDailyRewards() {
       AND dr.total_daily_reward > 0
     `);
     console.log(`Updated ${updateResult.rowCount} claim accounts with daily rewards`);
+
+    // Mark rewards as accumulated for today
+    await client.query(`
+      UPDATE daily_rewards
+      SET last_accumulated_at = NOW()
+      WHERE total_daily_reward > 0
+    `);
+    console.log(`Marked rewards as accumulated for today`);
 
     // Get stats about processed rewards
     const stats = await client.query(`
