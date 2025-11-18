@@ -540,6 +540,7 @@ const UserProfile = () => {
               <div className="relative">
                 <BuxClaimButton
                   amount={parseInt(claimAmount)}
+                  unclaimedAmount={userData?.unclaimed_rewards || 0}
                   onError={(error) => toast.error(error.message || 'Claim failed')}
                   className="w-full py-3 px-4 rounded-lg font-bold border-2 border-white/90 \n                            relative overflow-hidden transition-all duration-300\n                            disabled:opacity-50 disabled:cursor-not-allowed"
                 >
