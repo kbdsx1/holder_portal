@@ -398,4 +398,24 @@
     margin-right: auto;
     box-sizing: border-box;
   }
+
+  /* Reduce padding on userprofile-wrap for better mobile tile width */
+  .userprofile-wrap {
+    padding: 1rem !important;
+  }
+
+  /* Ensure grid container uses full width */
+  .grid.grid-cols-1 {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  /* Override text-6xl for My CannaSolz heading on mobile */
+  h2.text-6xl,
+  .container-panel h2.text-6xl,
+  .userprofile-wrap ~ h2.text-6xl,
+  .space-y-6 > h2.text-6xl {
+    font-size: clamp(1.5rem, 6vw, 2rem) !important;
+    line-height: 1.2 !important;
+  }
 }
