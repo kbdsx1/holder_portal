@@ -14,7 +14,8 @@ const BuxClaimButton = ({
   children,
   unclaimedAmount = 0
 }) => {
-  const { publicKey, signTransaction, connected } = useWallet();
+  const wallet = useWallet();
+  const { publicKey, signTransaction, connected } = wallet;
   const connection = useConnection();
   const { setVisible } = useWalletModal();
   const [isLoading, setIsLoading] = useState(false);
@@ -62,14 +63,23 @@ const BuxClaimButton = ({
         tx.recentBlockhash = blockhash;
       }
       
+      // Ensure fee payer is set
+      if (!tx.feePayer) {
+        tx.feePayer = publicKey;
+      }
+      
       console.log('Requesting wallet signature...', {
         instructions: tx.instructions.length,
         signatures: tx.signatures.length,
-        feePayer: tx.feePayer?.toString()
+        feePayer: tx.feePayer?.toString(),
+        recentBlockhash: tx.recentBlockhash
       });
       
-      // Request signature from wallet - this should open the wallet prompt
-      const signedTx = await signTransaction(tx);
+      // Request signature from wallet - use wallet object directly like UserProfile does
+      const signedTx = await wallet.signTransaction(tx);
+      if (!signedTx) {
+        throw new Error('Failed to sign transaction - wallet did not return signed transaction');
+      }
       console.log('Transaction signed by wallet');
 
       const finalizeResponse = await fetch(`${API_BASE_URL}/api/user/claim/finalize`, {
