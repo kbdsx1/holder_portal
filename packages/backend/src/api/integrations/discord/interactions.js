@@ -100,17 +100,16 @@ interactionsRouter.post('/', async (req, res) => {
       return res.status(400).json({ error: 'Invalid JSON' });
     }
     
-    // Handle ping (Discord verification) - must respond immediately, no signature check needed
-    // Discord sends PING for endpoint verification - respond immediately with PONG
-    if (interaction.type === InteractionType.PING) {
+    // Handle ping (Discord verification) - CRITICAL: respond immediately with exact format
+    // Discord sends PING for endpoint verification - must respond within 3 seconds
+    if (interaction.type === InteractionType.PING || interaction.type === 1) {
       console.log('Received PING, responding with PONG');
-      // Ensure we have rawBody for potential signature verification later
-      if (!req.rawBody && rawBodyString) {
-        req.rawBody = Buffer.from(rawBodyString, 'utf8');
-      }
-      // Discord requires exact response format: {"type": 1}
-      // Use res.json() which properly sets Content-Type and ends response
-      return res.status(200).json({ type: 1 });
+      // Discord requires EXACT response: {"type": 1} with Content-Type: application/json
+      // Use res.end() to ensure no extra processing
+      res.setHeader('Content-Type', 'application/json');
+      res.status(200);
+      res.end('{"type":1}');
+      return;
     }
     
     // Verify signature for all other interaction types
