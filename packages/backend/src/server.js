@@ -28,24 +28,40 @@ const PORT = process.env.PORT || 3001;
 const FRONTEND_ORIGIN = runtime.frontendUrl;
 
 app.set('trust proxy', 1);
+
+// CORS - apply to all routes
 app.use(cors({
   origin: FRONTEND_ORIGIN,
   credentials: true
 }));
 
-// Discord interactions endpoint needs raw body for signature verification
-// We'll handle it in the interactions router itself
-app.use(expressPkg.json({ limit: '5mb' }));
-app.use(expressPkg.urlencoded({ extended: true }));
-app.use(session({
-  secret: process.env.SESSION_SECRET || 'change-me',
-  resave: false,
-  saveUninitialized: false,
-  cookie: {
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax'
+// Discord interactions endpoint needs special handling - exclude from global middleware
+app.use((req, res, next) => {
+  if (req.path === '/api/discord/interactions' && req.method === 'POST') {
+    // Skip all middleware for Discord interactions - handle in router
+    return next();
   }
-}));
+  // Apply JSON parser for all other routes
+  expressPkg.json({ limit: '5mb' })(req, res, next);
+});
+
+app.use(expressPkg.urlencoded({ extended: true }));
+
+// Session middleware - exclude Discord interactions
+app.use((req, res, next) => {
+  if (req.path === '/api/discord/interactions' && req.method === 'POST') {
+    return next();
+  }
+  session({
+    secret: process.env.SESSION_SECRET || 'change-me',
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax'
+    }
+  })(req, res, next);
+});
 
 const wrapHandler = (handler) => async (req, res, next) => {
   try {
