@@ -76,25 +76,33 @@ interactionsRouter.post('/', async (req, res) => {
     // Parse interaction from raw body (not parsed by global JSON middleware)
     let interaction;
     try {
-      interaction = JSON.parse(req.rawBody?.toString() || '{}');
+      const rawBodyString = req.rawBody?.toString() || '{}';
+      interaction = JSON.parse(rawBodyString);
     } catch (parseError) {
       console.error('Error parsing interaction body:', parseError);
       return res.status(400).json({ error: 'Invalid JSON' });
     }
     
-    // Handle ping (Discord verification) - must respond immediately, before signature check
+    // Handle ping (Discord verification) - must respond immediately, no signature check needed
+    // Discord sends PING without signature headers for endpoint verification
     if (interaction.type === InteractionType.PING) {
-      return res.json({
+      console.log('Received PING, responding with PONG');
+      res.setHeader('Content-Type', 'application/json');
+      return res.status(200).json({
         type: InteractionResponseType.PONG
       });
     }
     
-    // Verify signature for all other interaction types (skip in development if key not set)
-    if (!verifySignature(req)) {
-      console.warn('Invalid signature or missing headers');
-      if (process.env.NODE_ENV === 'production') {
+    // Verify signature for all other interaction types
+    // Skip verification in development if key not set
+    const publicKey = process.env.DISCORD_PUBLIC_KEY;
+    if (publicKey && process.env.NODE_ENV === 'production') {
+      if (!verifySignature(req)) {
+        console.warn('Invalid signature or missing headers');
         return res.status(401).json({ error: 'Unauthorized' });
       }
+    } else if (!publicKey) {
+      console.warn('DISCORD_PUBLIC_KEY not set - signature verification disabled');
     }
     
     // Handle application commands
