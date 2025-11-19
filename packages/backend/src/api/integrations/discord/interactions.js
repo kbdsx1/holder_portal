@@ -93,7 +93,7 @@ interactionsRouter.post('/', async (req, res) => {
     }
     
     // Handle ping (Discord verification) - must respond immediately, no signature check needed
-    // Discord sends PING without signature headers for endpoint verification
+    // Discord sends PING for endpoint verification - respond immediately with PONG
     if (interaction.type === InteractionType.PING) {
       console.log('Received PING, responding with PONG');
       // Ensure we have rawBody for potential signature verification later
@@ -101,10 +101,8 @@ interactionsRouter.post('/', async (req, res) => {
         req.rawBody = Buffer.from(rawBodyString, 'utf8');
       }
       // Discord requires exact response format: {"type": 1}
-      res.setHeader('Content-Type', 'application/json');
-      res.status(200);
-      res.send(JSON.stringify({ type: 1 }));
-      return;
+      // Use res.json() which properly sets Content-Type and ends response
+      return res.status(200).json({ type: 1 });
     }
     
     // Verify signature for all other interaction types
