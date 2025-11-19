@@ -2,7 +2,7 @@
  * Discord interactions endpoint - minimal implementation
  */
 
-export default async function handler(req, res) {
+export default function handler(req, res) {
   // OPTIONS
   if (req.method === 'OPTIONS') {
     res.writeHead(200, {
@@ -10,12 +10,14 @@ export default async function handler(req, res) {
       'Access-Control-Allow-Methods': 'POST, OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type, X-Signature-Ed25519, X-Signature-Timestamp'
     });
-    return res.end();
+    res.end();
+    return;
   }
 
   // Only POST
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
+    res.status(405).json({ error: 'Method not allowed' });
+    return;
   }
 
   try {
@@ -26,27 +28,40 @@ export default async function handler(req, res) {
     }
     
     if (!body || typeof body !== 'object') {
-      return res.status(400).json({ error: 'Invalid request body' });
+      res.status(400).json({ error: 'Invalid request body' });
+      return;
     }
 
-    // Handle PING - respond immediately
+    // Handle PING - respond immediately and synchronously
     if (body.type === 1) {
       res.writeHead(200, { 'Content-Type': 'application/json' });
-      return res.end('{"type":1}');
+      res.end('{"type":1}');
+      return;
     }
 
-    // Handle commands
+    // Handle commands - async
     if (body.type === 2) {
-      const { handleCommand } = await import('../packages/backend/src/api/integrations/discord/commands.js');
-      const response = await handleCommand(body);
-      return res.status(200).json(response);
+      (async () => {
+        try {
+          const { handleCommand } = await import('../packages/backend/src/api/integrations/discord/commands.js');
+          const response = await handleCommand(body);
+          res.status(200).json(response);
+        } catch (error) {
+          console.error('[Discord Interactions] Command error:', error);
+          res.status(500).json({ 
+            type: 4,
+            data: { content: '❌ An error occurred.', flags: 64 }
+          });
+        }
+      })();
+      return;
     }
 
-    return res.status(400).json({ error: 'Unknown interaction type' });
+    res.status(400).json({ error: 'Unknown interaction type' });
     
   } catch (error) {
     console.error('[Discord Interactions] Error:', error);
-    return res.status(500).json({ 
+    res.status(500).json({ 
       type: 4,
       data: { content: '❌ An error occurred.', flags: 64 }
     });
