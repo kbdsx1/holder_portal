@@ -3,6 +3,8 @@
  */
 
 export default function handler(req, res) {
+  console.log('[Discord Interactions Standalone] Request received:', req.method, req.url);
+  
   // OPTIONS
   if (req.method === 'OPTIONS') {
     res.writeHead(200, {
@@ -27,6 +29,8 @@ export default function handler(req, res) {
       body = JSON.parse(body);
     }
     
+    console.log('[Discord Interactions Standalone] Body:', JSON.stringify(body));
+    
     if (!body || typeof body !== 'object') {
       res.status(400).json({ error: 'Invalid request body' });
       return;
@@ -34,6 +38,7 @@ export default function handler(req, res) {
 
     // Handle PING - respond immediately and synchronously
     if (body.type === 1) {
+      console.log('[Discord Interactions Standalone] PING detected - responding with PONG');
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end('{"type":1}');
       return;
