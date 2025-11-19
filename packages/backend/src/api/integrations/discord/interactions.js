@@ -78,21 +78,38 @@ function verifySignature(req) {
 // Handle Discord interactions
 interactionsRouter.post('/', async (req, res) => {
   try {
-    // Get raw body - must be Buffer from raw middleware
-    if (!req.rawBody || !Buffer.isBuffer(req.rawBody)) {
-      console.error('No rawBody available');
-      return res.status(400).json({ error: 'Invalid request' });
+    // Get interaction - try multiple sources for Vercel serverless compatibility
+    let interaction = null;
+    let rawBodyString = '';
+    
+    // Try rawBody first (from raw middleware)
+    if (req.rawBody && Buffer.isBuffer(req.rawBody)) {
+      rawBodyString = req.rawBody.toString('utf8');
+    } 
+    // Fallback: try parsed body (Vercel might parse it)
+    else if (req.body && typeof req.body === 'object') {
+      // Already parsed - use it directly
+      interaction = req.body;
+      rawBodyString = JSON.stringify(req.body);
+    }
+    // Last resort: empty
+    else {
+      rawBodyString = '{}';
     }
     
-    const rawBodyString = req.rawBody.toString('utf8');
+    // Parse if not already parsed
+    if (!interaction) {
+      try {
+        interaction = JSON.parse(rawBodyString);
+      } catch (parseError) {
+        console.error('Error parsing interaction body:', parseError);
+        return res.status(400).json({ error: 'Invalid JSON' });
+      }
+    }
     
-    // Parse interaction
-    let interaction;
-    try {
-      interaction = JSON.parse(rawBodyString);
-    } catch (parseError) {
-      console.error('Error parsing interaction body:', parseError);
-      return res.status(400).json({ error: 'Invalid JSON' });
+    // Ensure rawBody is set for signature verification
+    if (!req.rawBody && rawBodyString) {
+      req.rawBody = Buffer.from(rawBodyString, 'utf8');
     }
     
     // Handle ping (Discord verification) - CRITICAL: respond immediately with exact format
