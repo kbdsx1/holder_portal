@@ -52,36 +52,35 @@ export default async function handler(req, res) {
   try {
     // Get body - Vercel parses JSON automatically
     let body = req.body;
-    let rawBody = '';
     
-    // Get raw body for signature verification
+    // Parse if needed
     if (typeof body === 'string') {
-      rawBody = body;
       body = JSON.parse(body);
-    } else if (body) {
-      rawBody = JSON.stringify(body);
-    } else {
-      // Body might be empty or undefined
-      return res.status(400).json({ error: 'Missing request body' });
+    }
+    
+    if (!body || typeof body !== 'object') {
+      return res.status(400).json({ error: 'Invalid request body' });
     }
 
-    // Verify signature (but be lenient during verification)
-    const publicKey = process.env.DISCORD_PUBLIC_KEY;
-    if (publicKey) {
-      const isValid = verifySignature(req, rawBody);
-      // Only reject if signature is invalid AND it's not a PING
-      // During verification, Discord sends PING and we should respond even if signature fails
-      if (!isValid && body.type !== 1) {
-        console.warn('[Discord] Signature verification failed for non-PING');
-        return res.status(401).json({ error: 'Unauthorized' });
-      }
-    }
-
-    // Handle PING - respond immediately with exact format
-    if (body && body.type === 1) {
+    // CRITICAL: Handle PING FIRST - before any signature verification
+    // Discord verification requires immediate response
+    if (body.type === 1) {
       console.log('[Discord Interactions] PING - responding with PONG');
       res.writeHead(200, { 'Content-Type': 'application/json' });
       return res.end('{"type":1}');
+    }
+
+    // Get raw body for signature verification (for non-PING requests)
+    let rawBody = typeof req.body === 'string' ? req.body : JSON.stringify(req.body);
+
+    // Verify signature for non-PING requests
+    const publicKey = process.env.DISCORD_PUBLIC_KEY;
+    if (publicKey) {
+      const isValid = verifySignature(req, rawBody);
+      if (!isValid) {
+        console.warn('[Discord] Signature verification failed');
+        return res.status(401).json({ error: 'Unauthorized' });
+      }
     }
 
     // Handle commands
