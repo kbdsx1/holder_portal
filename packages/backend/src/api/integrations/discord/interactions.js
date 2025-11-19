@@ -151,40 +151,37 @@ interactionsRouter.post('/', (req, res) => {
     // Handle non-PING requests asynchronously
     (async () => {
       try {
-    
-    // Verify signature for non-PING requests
-    const publicKey = process.env.DISCORD_PUBLIC_KEY;
-    if (publicKey) {
-      const isValid = verifySignature(req);
-      if (!isValid) {
-        console.warn('Signature verification failed');
-        res.status(401).json({ error: 'Unauthorized' });
-        return;
-      }
-    }
-    
-    // Handle application commands - async
-    if (interaction.type === InteractionType.APPLICATION_COMMAND) {
-      (async () => {
-        try {
+        // Verify signature for non-PING requests
+        const publicKey = process.env.DISCORD_PUBLIC_KEY;
+        if (publicKey) {
+          const isValid = verifySignature(req);
+          if (!isValid) {
+            console.warn('Signature verification failed');
+            res.status(401).json({ error: 'Unauthorized' });
+            return;
+          }
+        }
+        
+        // Handle application commands
+        if (interaction.type === InteractionType.APPLICATION_COMMAND) {
           const response = await handleCommand(interaction);
           res.json(response);
-        } catch (error) {
-          console.error('Error handling command:', error);
-          res.status(500).json({
-            type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
-            data: {
-              content: '❌ An error occurred processing your command.',
-              flags: 64 // Ephemeral
-            }
-          });
+          return;
         }
-      })();
-      return;
-    }
-    
-    // Unknown interaction type
-    res.status(400).json({ error: 'Unknown interaction type' });
+        
+        // Unknown interaction type
+        res.status(400).json({ error: 'Unknown interaction type' });
+      } catch (error) {
+        console.error('Error handling command:', error);
+        res.status(500).json({
+          type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+          data: {
+            content: '❌ An error occurred processing your command.',
+            flags: 64 // Ephemeral
+          }
+        });
+      }
+    })();
   } catch (error) {
     console.error('Error handling Discord interaction:', error);
     // If error occurs, check if it might be a PING request
