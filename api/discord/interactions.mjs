@@ -66,7 +66,7 @@ export default async function handler(req, res) {
 
     // Handle application commands
     if (interaction.type === 2) {
-      const { handleCommand } = await import('../packages/backend/src/api/integrations/discord/commands.js');
+      const { handleCommand } = await import('../../packages/backend/src/api/integrations/discord/commands.js');
       const response = await handleCommand(interaction);
       return res.status(200).json(response);
     }
@@ -95,3 +95,4 @@ export default async function handler(req, res) {
     });
   }
 }
+
