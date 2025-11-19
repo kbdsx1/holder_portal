@@ -111,7 +111,12 @@ interactionsRouter.post('/', async (req, res) => {
     // Discord verification requires immediate response
     if (interaction.type === 1 || interaction.type === InteractionType.PING) {
       console.log('Received PING, responding with PONG');
-      // Send response immediately - no signature verification, no other processing
+      // Remove all headers that might interfere
+      res.removeHeader('Access-Control-Allow-Origin');
+      res.removeHeader('Access-Control-Allow-Credentials');
+      res.removeHeader('Vary');
+      res.removeHeader('X-Powered-By');
+      // Send response immediately - exact format Discord expects
       res.writeHead(200, {
         'Content-Type': 'application/json'
       });
