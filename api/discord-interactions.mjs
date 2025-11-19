@@ -66,12 +66,12 @@ export default async function handler(req, res) {
     // Discord verification requires immediate response
     if (body.type === 1) {
       console.log('[Discord Interactions] PING - responding with PONG');
-      // Remove all extra headers - Discord may reject responses with Vercel/cache headers
-      res.removeHeader('cache-control');
-      res.removeHeader('x-vercel-cache');
-      res.removeHeader('x-vercel-id');
+      // Use writeHead with only Content-Type - no cache headers
       res.writeHead(200, { 
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
       });
       return res.end('{"type":1}');
     }
