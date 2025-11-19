@@ -77,6 +77,15 @@ function verifySignature(req) {
 
 // Handle Discord interactions
 interactionsRouter.post('/', async (req, res) => {
+  // CRITICAL: Ensure response is always sent, even on error
+  let responseSent = false;
+  const sendResponse = (status, data) => {
+    if (!responseSent) {
+      responseSent = true;
+      res.status(status).json(data);
+    }
+  };
+
   try {
     // Get interaction - try multiple sources for Vercel serverless compatibility
     let interaction = null;
@@ -103,13 +112,19 @@ interactionsRouter.post('/', async (req, res) => {
         interaction = JSON.parse(rawBodyString);
       } catch (parseError) {
         console.error('Error parsing interaction body:', parseError);
-        return res.status(400).json({ error: 'Invalid JSON' });
+        // If parsing fails but body might be PING, try to respond
+        if (rawBodyString && rawBodyString.includes('"type":1')) {
+          sendResponse(200, { type: 1 });
+          return;
+        }
+        sendResponse(400, { error: 'Invalid JSON' });
+        return;
       }
     }
     
     // CRITICAL: Handle PING FIRST - before any other processing
     // Discord verification requires immediate response
-    if (interaction.type === 1 || interaction.type === InteractionType.PING) {
+    if (interaction && (interaction.type === 1 || interaction.type === InteractionType.PING)) {
       console.log('Received PING, responding with PONG');
       // Remove all headers that might interfere
       res.removeHeader('Access-Control-Allow-Origin');
@@ -117,7 +132,7 @@ interactionsRouter.post('/', async (req, res) => {
       res.removeHeader('Vary');
       res.removeHeader('X-Powered-By');
       // Use res.json() to ensure proper JSON formatting
-      res.status(200).json({ type: 1 });
+      sendResponse(200, { type: 1 });
       return;
     }
     
@@ -143,16 +158,30 @@ interactionsRouter.post('/', async (req, res) => {
     }
     
     // Unknown interaction type
-    return res.status(400).json({ error: 'Unknown interaction type' });
+    sendResponse(400, { error: 'Unknown interaction type' });
   } catch (error) {
     console.error('Error handling Discord interaction:', error);
-    return res.status(500).json({
-      type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
-      data: {
-        content: '❌ An error occurred processing your command.',
-        flags: 64 // Ephemeral
+    // If error occurs, check if it might be a PING request
+    try {
+      const bodyStr = typeof req.body === 'string' ? req.body : JSON.stringify(req.body || '');
+      if (bodyStr && bodyStr.includes('"type":1')) {
+        console.log('Error occurred but responding with PONG for potential PING');
+        sendResponse(200, { type: 1 });
+        return;
       }
-    });
+    } catch (e) {
+      // Ignore
+    }
+    
+    if (!responseSent) {
+      sendResponse(500, {
+        type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+        data: {
+          content: '❌ An error occurred processing your command.',
+          flags: 64 // Ephemeral
+        }
+      });
+    }
   }
 });
 
