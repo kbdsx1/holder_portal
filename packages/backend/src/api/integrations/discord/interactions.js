@@ -107,39 +107,31 @@ interactionsRouter.post('/', async (req, res) => {
       }
     }
     
+    // CRITICAL: Handle PING FIRST - before any other processing
+    // Discord verification requires immediate response
+    if (interaction.type === 1 || interaction.type === InteractionType.PING) {
+      console.log('Received PING, responding with PONG');
+      // Send response immediately - no signature verification, no other processing
+      res.writeHead(200, {
+        'Content-Type': 'application/json'
+      });
+      res.end('{"type":1}');
+      return;
+    }
+    
     // Ensure rawBody is set for signature verification
     if (!req.rawBody && rawBodyString) {
       req.rawBody = Buffer.from(rawBodyString, 'utf8');
     }
     
-    // Verify signature - Discord may check this even for PING during verification
+    // Verify signature for non-PING requests
     const publicKey = process.env.DISCORD_PUBLIC_KEY;
     if (publicKey) {
       const isValid = verifySignature(req);
       if (!isValid) {
         console.warn('Signature verification failed');
-        // For PING during verification, Discord might not send valid signatures
-        // But for other types, we need valid signatures
-        if (interaction.type !== 1 && interaction.type !== InteractionType.PING) {
-          return res.status(401).json({ error: 'Unauthorized' });
-        }
-        // For PING, continue even if signature fails (allows verification to proceed)
+        return res.status(401).json({ error: 'Unauthorized' });
       }
-    }
-    
-    // Handle ping (Discord verification) - CRITICAL: respond immediately with exact format
-    // Discord sends PING for endpoint verification - must respond within 3 seconds
-    if (interaction.type === 1 || interaction.type === InteractionType.PING) {
-      console.log('Received PING, responding with PONG');
-      // Discord requires EXACT response: {"type": 1} 
-      // No extra whitespace, no formatting - exact string
-      // Remove all CORS headers for Discord verification - they might interfere
-      res.removeHeader('Access-Control-Allow-Origin');
-      res.removeHeader('Access-Control-Allow-Credentials');
-      res.removeHeader('Vary');
-      res.setHeader('Content-Type', 'application/json');
-      res.status(200).end('{"type":1}');
-      return;
     }
     
     // Handle application commands
