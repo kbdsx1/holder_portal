@@ -29,11 +29,17 @@ const FRONTEND_ORIGIN = runtime.frontendUrl;
 
 app.set('trust proxy', 1);
 
-// CORS - apply to all routes
-app.use(cors({
-  origin: FRONTEND_ORIGIN,
-  credentials: true
-}));
+// CORS - apply to all routes EXCEPT Discord interactions
+app.use((req, res, next) => {
+  // Skip CORS for Discord interactions - Discord doesn't like CORS headers
+  if (req.path === '/api/discord/interactions') {
+    return next();
+  }
+  cors({
+    origin: FRONTEND_ORIGIN,
+    credentials: true
+  })(req, res, next);
+});
 
 // Discord interactions endpoint needs special handling - exclude from global middleware
 app.use((req, res, next) => {
