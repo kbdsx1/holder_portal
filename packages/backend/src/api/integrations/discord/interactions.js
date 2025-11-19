@@ -119,7 +119,12 @@ interactionsRouter.post('/', async (req, res) => {
       }
     }
     
-    // CRITICAL: Handle PING FIRST - before any other processing
+    // Ensure rawBody is set for signature verification
+    if (!req.rawBody && rawBodyString) {
+      req.rawBody = Buffer.from(rawBodyString, 'utf8');
+    }
+    
+    // CRITICAL: Handle PING - respond immediately
     // Discord verification requires immediate response
     if (interaction && (interaction.type === 1 || interaction.type === InteractionType.PING)) {
       console.log('Received PING, responding with PONG');
@@ -133,15 +138,10 @@ interactionsRouter.post('/', async (req, res) => {
       return;
     }
     
-    // Ensure rawBody is set for signature verification
-    if (!req.rawBody && rawBodyString) {
-      req.rawBody = Buffer.from(rawBodyString, 'utf8');
-    }
-    
-    // Verify signature - but be lenient for PING during verification
+    // Verify signature for non-PING requests
     // Discord sends invalid signatures during verification to test security
     const publicKey = process.env.DISCORD_PUBLIC_KEY;
-    if (publicKey && interaction.type !== 1 && interaction.type !== InteractionType.PING) {
+    if (publicKey) {
       const isValid = verifySignature(req);
       if (!isValid) {
         console.warn('Signature verification failed');
