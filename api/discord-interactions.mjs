@@ -1,81 +1,74 @@
 /**
  * Standalone Discord interactions endpoint for Vercel
  * Handles PING/PONG for verification and slash commands
+ * This is a dedicated serverless function that bypasses all Express middleware
  */
 
 export default async function handler(req, res) {
-  console.log('[Discord Interactions] Request received:', req.method, req.url);
+  console.log('[Discord Interactions] === REQUEST START ===');
+  console.log('[Discord Interactions] Method:', req.method);
+  console.log('[Discord Interactions] URL:', req.url);
+  console.log('[Discord Interactions] Headers:', JSON.stringify(req.headers));
   
   // Only allow POST
   if (req.method !== 'POST') {
-    console.log('[Discord Interactions] Method not allowed:', req.method);
+    console.log('[Discord Interactions] Method not allowed');
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
   try {
-    // Read raw body - Vercel provides it as a stream or buffer
-    let rawBody = '';
+    // Get body - handle multiple formats
+    let interaction;
     
-    if (req.body) {
-      // Body might already be parsed or available
+    // Check if body is already parsed (Express might have done this)
+    if (req.body && typeof req.body === 'object' && 'type' in req.body) {
+      interaction = req.body;
+      console.log('[Discord Interactions] Using req.body, type:', interaction.type);
+    } else {
+      // Read raw body
+      let rawBody = '';
       if (typeof req.body === 'string') {
         rawBody = req.body;
       } else if (Buffer.isBuffer(req.body)) {
         rawBody = req.body.toString('utf8');
       } else {
-        // Already parsed JSON
-        const interaction = req.body;
-        console.log('[Discord Interactions] Body already parsed, type:', interaction.type);
-        
-        // Handle PING immediately - Discord verification
-        if (interaction.type === 1) {
-          console.log('[Discord Interactions] PING detected, responding with PONG');
-          res.setHeader('Content-Type', 'application/json');
-          return res.status(200).end('{"type":1}');
-        }
-        
-        // Handle other interaction types
-        const { handleCommand } = await import('../packages/backend/src/api/integrations/discord/commands.js');
-        const response = await handleCommand(interaction);
-        res.setHeader('Content-Type', 'application/json');
-        return res.status(200).json(response);
+        // Read from request stream
+        const chunks = [];
+        req.on('data', chunk => chunks.push(chunk));
+        await new Promise((resolve) => {
+          req.on('end', resolve);
+          req.on('error', resolve);
+        });
+        rawBody = Buffer.concat(chunks).toString('utf8');
       }
-    } else {
-      // Read from stream
-      const chunks = [];
-      for await (const chunk of req) {
-        chunks.push(chunk);
-      }
-      rawBody = Buffer.concat(chunks).toString('utf8');
-    }
-    
-    console.log('[Discord Interactions] Raw body length:', rawBody.length);
-    
-    // Parse JSON
-    let interaction;
-    try {
+      
+      console.log('[Discord Interactions] Raw body:', rawBody);
       interaction = JSON.parse(rawBody);
-      console.log('[Discord Interactions] Parsed interaction type:', interaction.type);
-    } catch (e) {
-      console.error('[Discord Interactions] JSON parse error:', e);
-      return res.status(400).json({ error: 'Invalid JSON' });
     }
 
-    // Handle PING immediately - Discord verification
+    console.log('[Discord Interactions] Interaction type:', interaction.type);
+
+    // CRITICAL: Handle PING immediately - Discord verification
+    // This MUST respond with exact format: {"type":1}
     if (interaction.type === 1) {
-      console.log('[Discord Interactions] PING detected, responding with PONG');
+      console.log('[Discord Interactions] PING detected - responding with PONG');
       res.setHeader('Content-Type', 'application/json');
-      return res.status(200).end('{"type":1}');
+      res.status(200);
+      res.end('{"type":1}');
+      console.log('[Discord Interactions] PONG sent');
+      return;
     }
 
-    // For other interaction types, import and use the full handler
+    // For other interaction types
+    console.log('[Discord Interactions] Handling command:', interaction.data?.name);
     const { handleCommand } = await import('../packages/backend/src/api/integrations/discord/commands.js');
     const response = await handleCommand(interaction);
     res.setHeader('Content-Type', 'application/json');
     return res.status(200).json(response);
     
   } catch (error) {
-    console.error('[Discord Interactions] Error:', error);
+    console.error('[Discord Interactions] ERROR:', error);
+    console.error('[Discord Interactions] Stack:', error.stack);
     res.setHeader('Content-Type', 'application/json');
     return res.status(500).json({ 
       type: 4,
@@ -83,4 +76,3 @@ export default async function handler(req, res) {
     });
   }
 }
-
