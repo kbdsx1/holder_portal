@@ -31,13 +31,43 @@ interactionsRouter.options('/', (req, res) => {
   res.status(200).end();
 });
 
-// Middleware to capture raw body BEFORE any parsing
-// This must be the first middleware to capture the raw request body
+// CRITICAL: Handle PING immediately before any middleware
+// Discord verification requires immediate response
+interactionsRouter.post('/', (req, res, next) => {
+  // Read body synchronously for PING check only
+  let bodyData = '';
+  req.on('data', chunk => { bodyData += chunk.toString(); });
+  req.on('end', () => {
+    try {
+      const parsed = JSON.parse(bodyData);
+      if (parsed.type === 1 || parsed.type === InteractionType.PING) {
+        // Store raw body for later use
+        req.rawBody = Buffer.from(bodyData, 'utf8');
+        // Respond immediately with exact format Discord expects
+        res.setHeader('Content-Type', 'application/json');
+        res.status(200).end('{"type":1}');
+        return;
+      }
+      // Not a PING, restore body and continue
+      req.body = parsed;
+      req.rawBody = Buffer.from(bodyData, 'utf8');
+      next();
+    } catch (e) {
+      // If parsing fails, continue to main handler
+      req.rawBody = Buffer.from(bodyData, 'utf8');
+      next();
+    }
+  });
+});
+
+// Middleware to capture raw body for other requests
 interactionsRouter.use(expressPkg.raw({ 
   type: 'application/json',
   limit: '1mb',
   verify: (req, res, buf) => {
-    req.rawBody = buf;
+    if (!req.rawBody) {
+      req.rawBody = buf;
+    }
   }
 }));
 
