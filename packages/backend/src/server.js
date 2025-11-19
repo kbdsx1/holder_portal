@@ -43,7 +43,7 @@ app.use((req, res, next) => {
 
 // Discord interactions endpoint needs special handling - exclude from global middleware
 app.use((req, res, next) => {
-  if (req.path === '/api/discord/interactions' && req.method === 'POST') {
+  if ((req.path === '/api/discord/interactions' || req.path === '/api/discord-interactions') && req.method === 'POST') {
     // Skip all middleware for Discord interactions - handle in router
     return next();
   }
@@ -55,7 +55,7 @@ app.use(expressPkg.urlencoded({ extended: true }));
 
 // Session middleware - exclude Discord interactions
 app.use((req, res, next) => {
-  if (req.path === '/api/discord/interactions' && req.method === 'POST') {
+  if ((req.path === '/api/discord/interactions' || req.path === '/api/discord-interactions') && req.method === 'POST') {
     return next();
   }
   session({
