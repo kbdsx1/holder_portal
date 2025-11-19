@@ -22,6 +22,23 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
+  // CRITICAL: Check for PING before any parsing to respond as fast as possible
+  // Discord's verification is very strict about response time
+  try {
+    const rawBody = typeof req.body === 'string' ? req.body : JSON.stringify(req.body || '');
+    if (rawBody && rawBody.includes('"type":1')) {
+      // Quick check - if it looks like a PING, respond immediately
+      const testParse = typeof req.body === 'object' ? req.body : JSON.parse(rawBody);
+      if (testParse && testParse.type === 1) {
+        console.log('[Discord Interactions] PING detected - immediate PONG');
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        return res.end('{"type":1}');
+      }
+    }
+  } catch (e) {
+    // Continue with normal parsing
+  }
+
   try {
     // Get interaction - Vercel parses JSON automatically
     let interaction = req.body;
@@ -40,8 +57,10 @@ export default async function handler(req, res) {
     // Discord requires EXACT response: {"type":1} with 200 status
     if (interaction.type === 1) {
       console.log('[Discord Interactions] PING - responding with PONG');
-      // Use exact string format - no spaces in JSON
-      res.status(200).setHeader('Content-Type', 'application/json');
+      // Use writeHead for minimal headers - Discord is very strict about response format
+      res.writeHead(200, {
+        'Content-Type': 'application/json'
+      });
       return res.end('{"type":1}');
     }
 
