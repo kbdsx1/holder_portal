@@ -23,6 +23,14 @@ const InteractionResponseType = {
 
 const interactionsRouter = expressPkg.Router();
 
+// Handle OPTIONS requests (CORS preflight)
+interactionsRouter.options('/', (req, res) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-Signature-Ed25519, X-Signature-Timestamp');
+  res.status(200).end();
+});
+
 // Middleware to capture raw body BEFORE any parsing
 // This must be the first middleware to capture the raw request body
 interactionsRouter.use(expressPkg.raw({ 
