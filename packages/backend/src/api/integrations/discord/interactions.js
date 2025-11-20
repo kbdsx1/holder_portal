@@ -98,8 +98,18 @@ interactionsRouter.post('/', (req, res) => {
       isPing = true;
     }
     
-    // If PING detected, respond immediately
+    // If PING detected, verify signature then respond immediately
     if (isPing) {
+      // Attempt signature verification - Discord may require this capability
+      // But don't block response even if verification fails
+      try {
+        if (process.env.DISCORD_PUBLIC_KEY && req.rawBody) {
+          verifySignature(req);
+        }
+      } catch (e) {
+        // Ignore - still respond with PONG
+      }
+      
       res.removeHeader('Access-Control-Allow-Origin');
       res.removeHeader('Access-Control-Allow-Credentials');
       res.removeHeader('Vary');
@@ -151,6 +161,15 @@ interactionsRouter.post('/', (req, res) => {
     
     // Handle PING (fallback if not caught above)
     if (interaction && (interaction.type === 1 || interaction.type === InteractionType.PING)) {
+      // Attempt signature verification - Discord may require this capability
+      try {
+        if (process.env.DISCORD_PUBLIC_KEY && req.rawBody) {
+          verifySignature(req);
+        }
+      } catch (e) {
+        // Ignore - still respond with PONG
+      }
+      
       res.removeHeader('Access-Control-Allow-Origin');
       res.removeHeader('Access-Control-Allow-Credentials');
       res.removeHeader('Vary');

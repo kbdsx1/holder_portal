@@ -66,9 +66,8 @@ async function main() {
          ON CONFLICT (wallet_address) 
          DO UPDATE SET 
            balance = $2,
-           last_updated = CURRENT_TIMESTAMP,
-           owner_discord_id = COALESCE(token_holders.owner_discord_id, EXCLUDED.owner_discord_id),
-           owner_name = COALESCE(token_holders.owner_name, EXCLUDED.owner_name)`,
+           last_updated = CURRENT_TIMESTAMP
+           -- Preserve existing owner_discord_id and owner_name - never clear or update them`,
         [holder.address, holder.balance]
       );
     }

@@ -94,13 +94,13 @@ function getUserAvatarUrl(user) {
   }
 }
 
-// Handle /mynfts command
-export async function handleMyNFTsCommand(interaction) {
+// Handle /mycsz420 command
+export async function handleMyCSz420Command(interaction) {
   let client;
   try {
-    // Get user from interaction (guild or DM)
-    const user = interaction.member?.user || interaction.user;
-    if (!user) {
+    // Get command issuer
+    const issuer = interaction.member?.user || interaction.user;
+    if (!issuer) {
       return {
         type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
         data: {
@@ -110,9 +110,229 @@ export async function handleMyNFTsCommand(interaction) {
       };
     }
     
-    const discordId = user.id;
-    const username = user.global_name || user.username || 'Unknown User';
-    const avatarUrl = getUserAvatarUrl(user);
+    // Check if user option is provided and if issuer has permission
+    const userOption = interaction.data?.options?.find(opt => opt.type === 6); // USER type
+    const isAdminOrOwner = hasAdminOrOwnerRole(interaction);
+    
+    // Determine target user
+    let targetUser;
+    if (userOption && isAdminOrOwner) {
+      // Admin/Owner viewing another user
+      const targetUserId = userOption.value;
+      if (targetUserId && interaction.data?.resolved?.users?.[targetUserId]) {
+        targetUser = interaction.data.resolved.users[targetUserId];
+      } else if (targetUserId) {
+        // Fallback: create minimal user object with just ID
+        targetUser = { id: targetUserId };
+      } else {
+        targetUser = null;
+      }
+    } else if (userOption && !isAdminOrOwner) {
+      // Non-admin trying to view another user - deny
+      return {
+        type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+        data: {
+          content: '❌ You do not have permission to view other users\' token data.',
+          flags: 64 // Ephemeral
+        }
+      };
+    } else {
+      // Viewing own data
+      targetUser = issuer;
+    }
+    
+    if (!targetUser) {
+      return {
+        type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+        data: {
+          content: '❌ Invalid user specified.',
+          flags: 64 // Ephemeral
+        }
+      };
+    }
+    
+    const discordId = targetUser.id;
+    const username = targetUser.global_name || targetUser.username || 'Unknown User';
+    const avatarUrl = getUserAvatarUrl(targetUser);
+    
+    // Query token data: daily yield, unclaimed balance, and actual token balance
+    client = await dbPool.connect();
+    const result = await client.query(
+      `SELECT 
+        COALESCE(dr.total_daily_reward, 0) as daily_yield,
+        COALESCE(ca.unclaimed_amount, 0) as unclaimed_balance,
+        COALESCE(SUM(th.balance), 0) as actual_balance
+      FROM (SELECT $1::text as discord_id) AS u
+      LEFT JOIN daily_rewards dr ON dr.discord_id = u.discord_id
+      LEFT JOIN claim_accounts ca ON ca.discord_id = u.discord_id
+      LEFT JOIN token_holders th ON th.owner_discord_id = u.discord_id
+      GROUP BY dr.total_daily_reward, ca.unclaimed_amount`,
+      [discordId]
+    );
+    
+    const row = result.rows[0];
+    
+    if (!row) {
+      return {
+        type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+        data: {
+          embeds: [{
+            title: `💰 CSz420 Token - ${username}`,
+            description: 'No token data found.',
+            color: 0xFFA500,
+            thumbnail: avatarUrl ? { url: avatarUrl } : undefined,
+            footer: {
+              text: 'CannaSolz',
+              icon_url: 'https://cannasolz.vercel.app/favicon.jpeg'
+            },
+            timestamp: new Date().toISOString()
+          }],
+          flags: 64 // Ephemeral
+        }
+      };
+    }
+    
+    // Format numbers with commas
+    const formatTokenAmount = (amount) => {
+      const num = Number(amount);
+      if (num === 0) return '0';
+      return num.toLocaleString('en-US', { maximumFractionDigits: 0 });
+    };
+    
+    const dailyYield = formatTokenAmount(row.daily_yield);
+    const unclaimedBalance = formatTokenAmount(row.unclaimed_balance);
+    const actualBalance = formatTokenAmount(row.actual_balance);
+    
+    const fields = [
+      {
+        name: 'Daily Yield',
+        value: `${dailyYield} $CSz420`,
+        inline: true
+      },
+      {
+        name: 'Unclaimed',
+        value: `${unclaimedBalance} $CSz420`,
+        inline: true
+      },
+      {
+        name: 'Balance',
+        value: `${actualBalance} $CSz420`,
+        inline: true
+      }
+    ];
+    
+    return {
+      type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+      data: {
+        embeds: [{
+          title: `💰 CSz420 Token - ${username}`,
+          color: 0x95D5B2, // Green color matching brand
+          thumbnail: avatarUrl ? { url: avatarUrl } : undefined,
+          fields: fields,
+          footer: {
+            text: 'CannaSolz',
+            icon_url: 'https://cannasolz.vercel.app/favicon.jpeg'
+          },
+          timestamp: new Date().toISOString()
+        }],
+        flags: 64 // Ephemeral
+      }
+    };
+  } catch (error) {
+    console.error('Error handling mycsz420 command:', error);
+    return {
+      type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+      data: {
+        content: '❌ Failed to fetch token data. Please try again later.',
+        flags: 64 // Ephemeral
+      }
+    };
+  } finally {
+    if (client) {
+      client.release();
+    }
+  }
+}
+
+// Check if user has admin or owner role
+function hasAdminOrOwnerRole(interaction) {
+  // Roles are only available in guild interactions (not DMs)
+  if (!interaction.member?.roles) return false;
+  
+  const ADMIN_ROLE_ID = process.env.ADMIN_ROLE_ID;
+  const OWNER_ROLE_ID = process.env.OWNER_ROLE_ID;
+  
+  if (!ADMIN_ROLE_ID && !OWNER_ROLE_ID) return false;
+  
+  // Discord passes roles as an array of role IDs
+  const memberRoles = Array.isArray(interaction.member.roles) 
+    ? interaction.member.roles 
+    : [];
+  
+  return (ADMIN_ROLE_ID && memberRoles.includes(ADMIN_ROLE_ID)) ||
+         (OWNER_ROLE_ID && memberRoles.includes(OWNER_ROLE_ID));
+}
+
+// Handle /mynfts command
+export async function handleMyNFTsCommand(interaction) {
+  let client;
+  try {
+    // Get command issuer
+    const issuer = interaction.member?.user || interaction.user;
+    if (!issuer) {
+      return {
+        type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+        data: {
+          content: '❌ Unable to identify user.',
+          flags: 64 // Ephemeral
+        }
+      };
+    }
+    
+    // Check if user option is provided and if issuer has permission
+    const userOption = interaction.data?.options?.find(opt => opt.type === 6); // USER type
+    const isAdminOrOwner = hasAdminOrOwnerRole(interaction);
+    
+    // Determine target user
+    let targetUser;
+    if (userOption && isAdminOrOwner) {
+      // Admin/Owner viewing another user
+      const targetUserId = userOption.value;
+      if (targetUserId && interaction.data?.resolved?.users?.[targetUserId]) {
+        targetUser = interaction.data.resolved.users[targetUserId];
+      } else if (targetUserId) {
+        // Fallback: create minimal user object with just ID
+        targetUser = { id: targetUserId };
+      } else {
+        targetUser = null;
+      }
+    } else if (userOption && !isAdminOrOwner) {
+      // Non-admin trying to view another user - deny
+      return {
+        type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+        data: {
+          content: '❌ You do not have permission to view other users\' NFT holdings.',
+          flags: 64 // Ephemeral
+        }
+      };
+    } else {
+      // Viewing own data
+      targetUser = issuer;
+    }
+    
+    if (!targetUser) {
+      return {
+        type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+        data: {
+          content: '❌ Invalid user specified.',
+          flags: 64 // Ephemeral
+        }
+      };
+    }
+    
+    const discordId = targetUser.id;
+    const username = targetUser.global_name || targetUser.username || 'Unknown User';
+    const avatarUrl = getUserAvatarUrl(targetUser);
     
     // Query collection_counts for this user
     client = await dbPool.connect();
@@ -317,6 +537,206 @@ export async function handleCollectionCommand() {
   }
 }
 
+// Handle /help command
+export async function handleHelpCommand() {
+  const runtime = getRuntimeConfig();
+  const baseUrl = runtime.frontendUrl || 'https://cannasolz.vercel.app';
+  const faviconUrl = `${baseUrl}/favicon.jpeg`;
+  
+  return {
+    type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+    data: {
+      embeds: [{
+        title: 'CannaSolz Bot Commands',
+        description: 'Here are all available commands:',
+        color: 0x95D5B2,
+        thumbnail: {
+          url: faviconUrl
+        },
+        fields: [
+          {
+            name: '📊 /collection',
+            value: 'Display CannaSolz collection statistics from Magic Eden',
+            inline: false
+          },
+          {
+            name: '📦 /mynfts',
+            value: 'View your CannaSolz NFT holdings',
+            inline: false
+          },
+          {
+            name: '💰 /mycsz420',
+            value: 'View your CSz420 token balance, daily yield, and unclaimed rewards',
+            inline: false
+          }
+        ],
+        footer: {
+          text: 'CannaSolz',
+          icon_url: faviconUrl
+        },
+        timestamp: new Date().toISOString()
+      }],
+      flags: 64 // Ephemeral
+    }
+  };
+}
+
+// Handle /pay command (Admin/Owner only)
+export async function handlePayCommand(interaction) {
+  let client;
+  try {
+    // Check if user has admin or owner role
+    const isAdminOrOwner = hasAdminOrOwnerRole(interaction);
+    if (!isAdminOrOwner) {
+      return {
+        type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+        data: {
+          content: '❌ You do not have permission to use this command.',
+          flags: 64 // Ephemeral
+        }
+      };
+    }
+    
+    // Get user and amount options
+    const userOption = interaction.data?.options?.find(opt => opt.name === 'user');
+    const amountOption = interaction.data?.options?.find(opt => opt.name === 'amount');
+    
+    if (!userOption || !amountOption) {
+      return {
+        type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+        data: {
+          content: '❌ Missing required options: user and amount',
+          flags: 64 // Ephemeral
+        }
+      };
+    }
+    
+    const targetUserId = userOption.value;
+    const amount = parseFloat(amountOption.value);
+    
+    if (!targetUserId || !amount || amount <= 0 || isNaN(amount)) {
+      return {
+        type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+        data: {
+          content: '❌ Invalid amount. Must be a positive number.',
+          flags: 64 // Ephemeral
+        }
+      };
+    }
+    
+    // Get target user from resolved users
+    const targetUser = interaction.data?.resolved?.users?.[targetUserId];
+    if (!targetUser) {
+      return {
+        type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+        data: {
+          content: '❌ Invalid user specified.',
+          flags: 64 // Ephemeral
+        }
+      };
+    }
+    
+    const username = targetUser.global_name || targetUser.username || 'Unknown User';
+    const avatarUrl = getUserAvatarUrl(targetUser);
+    
+    // Convert amount to the smallest unit (assuming 9 decimals like SOL)
+    const amountInSmallestUnit = BigInt(Math.floor(amount * 1_000_000_000));
+    
+    // Update claim_accounts
+    client = await dbPool.connect();
+    await client.query('BEGIN');
+    
+    // Ensure claim_accounts row exists
+    await client.query(
+      `INSERT INTO claim_accounts (discord_id, discord_name, unclaimed_amount, total_claimed, last_claim_time, created_at)
+       VALUES ($1, $2, 0, 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+       ON CONFLICT (discord_id) DO NOTHING`,
+      [targetUserId, username]
+    );
+    
+    // Update unclaimed_amount
+    const updateResult = await client.query(
+      `UPDATE claim_accounts 
+       SET unclaimed_amount = unclaimed_amount + $1,
+           discord_name = COALESCE(discord_name, $2)
+       WHERE discord_id = $3
+       RETURNING unclaimed_amount`,
+      [amountInSmallestUnit.toString(), username, targetUserId]
+    );
+    
+    if (updateResult.rows.length === 0) {
+      await client.query('ROLLBACK');
+      return {
+        type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+        data: {
+          content: '❌ Failed to update user account.',
+          flags: 64 // Ephemeral
+        }
+      };
+    }
+    
+    await client.query('COMMIT');
+    
+    const newBalance = Number(updateResult.rows[0].unclaimed_amount) / 1_000_000_000;
+    
+    // Format numbers
+    const formatTokenAmount = (amt) => {
+      const num = Number(amt);
+      if (num === 0) return '0';
+      return num.toLocaleString('en-US', { maximumFractionDigits: 2 });
+    };
+    
+    return {
+      type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+      data: {
+        embeds: [{
+          title: '💰 Payment Processed',
+          color: 0x95D5B2,
+          thumbnail: avatarUrl ? { url: avatarUrl } : undefined,
+          fields: [
+            {
+              name: 'User Credited',
+              value: `${formatTokenAmount(amount)} $CSz420`,
+              inline: false
+            },
+            {
+              name: 'New Balance',
+              value: `${formatTokenAmount(newBalance)} $CSz420`,
+              inline: false
+            }
+          ],
+          footer: {
+            text: 'CannaSolz',
+            icon_url: 'https://cannasolz.vercel.app/favicon.jpeg'
+          },
+          timestamp: new Date().toISOString()
+        }],
+        flags: 0 // Public (so admin can see the result)
+      }
+    };
+  } catch (error) {
+    console.error('Error handling pay command:', error);
+    if (client) {
+      try {
+        await client.query('ROLLBACK');
+      } catch (e) {
+        // Ignore
+      }
+    }
+    return {
+      type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+      data: {
+        content: '❌ Failed to process payment. Please try again later.',
+        flags: 64 // Ephemeral
+      }
+    };
+  } finally {
+    if (client) {
+      client.release();
+    }
+  }
+}
+
 // Main command handler
 export async function handleCommand(interaction) {
   const commandName = interaction.data?.name;
@@ -326,6 +746,12 @@ export async function handleCommand(interaction) {
       return await handleCollectionCommand();
     case 'mynfts':
       return await handleMyNFTsCommand(interaction);
+    case 'mycsz420':
+      return await handleMyCSz420Command(interaction);
+    case 'help':
+      return await handleHelpCommand();
+    case 'pay':
+      return await handlePayCommand(interaction);
     default:
       return {
         type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,

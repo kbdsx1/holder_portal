@@ -37,7 +37,52 @@ const commands = [
   {
     name: 'mynfts',
     description: 'View your CannaSolz NFT holdings',
+    type: 1, // CHAT_INPUT
+    options: [
+      {
+        name: 'user',
+        description: 'User to view (Admin/Owner only)',
+        type: 6, // USER type
+        required: false
+      }
+    ]
+  },
+  {
+    name: 'mycsz420',
+    description: 'View your CSz420 token balance, daily yield, and unclaimed rewards',
+    type: 1, // CHAT_INPUT
+    options: [
+      {
+        name: 'user',
+        description: 'User to view (Admin/Owner only)',
+        type: 6, // USER type
+        required: false
+      }
+    ]
+  },
+  {
+    name: 'help',
+    description: 'Show all available CannaSolz bot commands',
     type: 1 // CHAT_INPUT
+  },
+  {
+    name: 'pay',
+    description: 'Add tokens to a user\'s unclaimed balance (Admin/Owner only)',
+    type: 1, // CHAT_INPUT
+    options: [
+      {
+        name: 'user',
+        description: 'User to credit tokens to',
+        type: 6, // USER type
+        required: true
+      },
+      {
+        name: 'amount',
+        description: 'Amount of $CSz420 tokens to credit',
+        type: 10, // NUMBER type
+        required: true
+      }
+    ]
   }
 ];
 
