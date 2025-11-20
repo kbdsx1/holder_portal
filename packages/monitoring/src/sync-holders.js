@@ -71,6 +71,20 @@ async function main() {
         [holder.address, holder.balance]
       );
     }
+    
+    // Backfill Discord IDs and names from user_wallets for any missing values
+    console.log('Backfilling Discord IDs and names from user_wallets...');
+    const backfillResult = await client.query(
+      `UPDATE token_holders th
+       SET 
+         owner_discord_id = COALESCE(th.owner_discord_id, uw.discord_id),
+         owner_name = COALESCE(th.owner_name, uw.discord_name)
+       FROM user_wallets uw
+       WHERE th.wallet_address = uw.wallet_address
+         AND (th.owner_discord_id IS NULL OR th.owner_discord_id = '' OR th.owner_name IS NULL OR th.owner_name = '')`
+    );
+    console.log(`Backfilled ${backfillResult.rowCount} token_holders with Discord IDs/names`);
+    
     const addresses = currentHolders.map(h => h.address);
     if (addresses.length > 0) {
       await client.query(
