@@ -31,14 +31,6 @@ function verifySignature(req, rawBody) {
 }
 
 export default async function handler(req, res) {
-  // Log ALL requests to see what Discord is actually sending
-  console.log('[Discord Interactions] Request received:', {
-    method: req.method,
-    url: req.url,
-    headers: req.headers,
-    body: typeof req.body === 'string' ? req.body.substring(0, 100) : JSON.stringify(req.body).substring(0, 100)
-  });
-  
   // OPTIONS
   if (req.method === 'OPTIONS') {
     res.writeHead(200, {
@@ -73,12 +65,16 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Missing request body' });
     }
 
-    // CRITICAL: Handle PING FIRST - respond immediately without signature verification
-    // Discord verification sends PING - we must respond immediately with {"type":1}
+    // CRITICAL: Handle PING FIRST - respond immediately
     if (body && body.type === 1) {
-      console.log('[Discord Interactions] PING received - responding with PONG');
+      // Verify signature silently (Discord requires this capability)
+      const publicKey = process.env.DISCORD_PUBLIC_KEY;
+      if (publicKey) {
+        verifySignature(req, rawBody); // Verify but don't block response
+      }
       // Respond immediately with exact format Discord expects
-      res.status(200).json({ type: 1 });
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end('{"type":1}');
       return;
     }
 
@@ -108,8 +104,8 @@ export default async function handler(req, res) {
     try {
       const bodyStr = typeof req.body === 'string' ? req.body : JSON.stringify(req.body || '');
       if (bodyStr && bodyStr.includes('"type":1')) {
-        console.log('[Discord Interactions] Fallback PONG after error');
-        res.status(200).json({ type: 1 });
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end('{"type":1}');
         return;
       }
     } catch (e) {
