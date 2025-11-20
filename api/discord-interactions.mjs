@@ -31,6 +31,9 @@ function verifySignature(req, rawBody) {
 }
 
 export default async function handler(req, res) {
+  // Log ALL requests to see what Discord is actually sending
+  console.log('[Discord Interactions] Request:', req.method, req.url, JSON.stringify(req.headers));
+  
   // OPTIONS
   if (req.method === 'OPTIONS') {
     res.writeHead(200, {
@@ -39,6 +42,11 @@ export default async function handler(req, res) {
       'Access-Control-Allow-Headers': 'Content-Type, X-Signature-Ed25519, X-Signature-Timestamp'
     });
     return res.end();
+  }
+
+  // Handle GET requests (Discord might check endpoint accessibility)
+  if (req.method === 'GET') {
+    return res.status(200).json({ status: 'ok' });
   }
 
   // Only POST
