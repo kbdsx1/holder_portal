@@ -60,22 +60,11 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Missing request body' });
     }
 
-    // CRITICAL: Handle PING FIRST - verify signature but always respond
+    // CRITICAL: Handle PING FIRST - respond immediately without signature verification
+    // Discord verification sends PING - we must respond immediately with {"type":1}
     if (body && body.type === 1) {
-      console.log('[Discord Interactions] PING received');
-      
-      // Verify signature (Discord sends invalid sigs during verification)
-      const publicKey = process.env.DISCORD_PUBLIC_KEY;
-      if (publicKey) {
-        const isValid = verifySignature(req, rawBody);
-        if (isValid) {
-          console.log('[Discord Interactions] PING signature verification succeeded');
-        } else {
-          console.log('[Discord Interactions] PING signature verification failed (expected during verification)');
-        }
-      }
-      
-      // Respond immediately with minimal headers
+      console.log('[Discord Interactions] PING received - responding with PONG');
+      // Respond immediately with exact format Discord expects
       res.writeHead(200, { 'Content-Type': 'application/json' });
       return res.end('{"type":1}');
     }
