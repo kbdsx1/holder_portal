@@ -32,7 +32,12 @@ function verifySignature(req, rawBody) {
 
 export default async function handler(req, res) {
   // Log ALL requests to see what Discord is actually sending
-  console.log('[Discord Interactions] Request:', req.method, req.url, JSON.stringify(req.headers));
+  console.log('[Discord Interactions] Request received:', {
+    method: req.method,
+    url: req.url,
+    headers: req.headers,
+    body: typeof req.body === 'string' ? req.body.substring(0, 100) : JSON.stringify(req.body).substring(0, 100)
+  });
   
   // OPTIONS
   if (req.method === 'OPTIONS') {
