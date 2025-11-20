@@ -19,6 +19,32 @@ jobs:
           cache: 'npm'
       - name: Install
         run: npm ci
+      - name: Debug POSTGRES_URL (checking format)
+        env:
+          POSTGRES_URL: ${{ secrets.POSTGRES_URL }}
+        run: |
+          echo "Checking POSTGRES_URL format..."
+          if [ -z "$POSTGRES_URL" ]; then
+            echo "❌ POSTGRES_URL is empty!"
+            exit 1
+          fi
+          echo "✅ POSTGRES_URL is set (length: ${#POSTGRES_URL})"
+          echo "First 30 chars: ${POSTGRES_URL:0:30}..."
+          echo "Last 30 chars: ...${POSTGRES_URL: -30}"
+          # Check if it starts with postgresql://
+          if [[ ! "$POSTGRES_URL" =~ ^postgresql:// ]]; then
+            echo "❌ POSTGRES_URL does not start with 'postgresql://'"
+            exit 1
+          fi
+          # Extract hostname to verify
+          HOSTNAME=$(echo "$POSTGRES_URL" | sed -n 's|.*@\([^/]*\)/.*|\1|p')
+          echo "Extracted hostname: $HOSTNAME"
+          if [ "$HOSTNAME" = "base" ] || [ -z "$HOSTNAME" ]; then
+            echo "❌ Invalid hostname extracted: '$HOSTNAME'"
+            echo "Full URL structure check failed"
+            exit 1
+          fi
+          echo "✅ POSTGRES_URL format appears valid"
       - name: Update token holders
         env:
           POSTGRES_URL: ${{ secrets.POSTGRES_URL }}

@@ -25,6 +25,21 @@ if (!POSTGRES_URL) {
   process.exit(1);
 }
 
+// Debug: Log connection string format (masked for security)
+if (POSTGRES_URL) {
+  const urlParts = POSTGRES_URL.match(/^postgresql:\/\/([^:]+):([^@]+)@([^\/]+)\/(.+)$/);
+  if (urlParts) {
+    console.log('[Seed] Database connection configured');
+    console.log('[Seed] Host:', urlParts[3]);
+    console.log('[Seed] Database:', urlParts[4]);
+  } else {
+    console.error('[Seed] ❌ POSTGRES_URL format appears invalid');
+    console.error('[Seed] Expected format: postgresql://user:pass@host/db');
+    console.error('[Seed] Actual value (first 50 chars):', POSTGRES_URL.substring(0, 50));
+    process.exit(1);
+  }
+}
+
 if (!TOKEN_MINT) {
   console.error('Missing rewards token mint');
   process.exit(1);
@@ -64,35 +79,56 @@ async function fetchTokenHolders() {
 }
 
 async function upsertHolders(holders) {
-  const pool = new Pool({
-    connectionString: POSTGRES_URL,
-    ssl: { rejectUnauthorized: false }
-  });
-
-  const client = await pool.connect();
+  let pool;
   try {
-    await client.query('BEGIN');
-    await client.query('TRUNCATE token_holders');
+    pool = new Pool({
+      connectionString: POSTGRES_URL,
+      ssl: { rejectUnauthorized: false }
+    });
 
-    for (const [wallet, balance] of holders) {
-      await client.query(
-        `INSERT INTO token_holders (wallet_address, balance, last_updated)
-         VALUES ($1, $2, CURRENT_TIMESTAMP)
-         ON CONFLICT (wallet_address) DO UPDATE
-         SET balance = EXCLUDED.balance,
-             last_updated = CURRENT_TIMESTAMP`,
-        [wallet, balance]
-      );
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+      await client.query('TRUNCATE token_holders');
+
+      for (const [wallet, balance] of holders) {
+        await client.query(
+          `INSERT INTO token_holders (wallet_address, balance, last_updated)
+           VALUES ($1, $2, CURRENT_TIMESTAMP)
+           ON CONFLICT (wallet_address) DO UPDATE
+           SET balance = EXCLUDED.balance,
+               last_updated = CURRENT_TIMESTAMP`,
+          [wallet, balance]
+        );
+      }
+
+      await client.query('COMMIT');
+      console.log('[Seed] Upserted token holders:', holders.size);
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
     }
-
-    await client.query('COMMIT');
-    console.log('[Seed] Upserted token holders:', holders.size);
   } catch (error) {
-    await client.query('ROLLBACK');
+    console.error('[Seed] ❌ Database connection error:');
+    console.error('[Seed] Error code:', error.code);
+    console.error('[Seed] Error message:', error.message);
+    if (error.message.includes('getaddrinfo')) {
+      console.error('[Seed] ❌ DNS resolution failed - check POSTGRES_URL hostname');
+      const urlMatch = POSTGRES_URL.match(/@([^\/]+)/);
+      if (urlMatch) {
+        console.error('[Seed] Extracted hostname from URL:', urlMatch[1]);
+      } else {
+        console.error('[Seed] Could not extract hostname from POSTGRES_URL');
+        console.error('[Seed] POSTGRES_URL (first 100 chars):', POSTGRES_URL.substring(0, 100));
+      }
+    }
     throw error;
   } finally {
-    client.release();
-    await pool.end();
+    if (pool) {
+      await pool.end();
+    }
   }
 }
 
