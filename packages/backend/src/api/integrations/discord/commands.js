@@ -231,7 +231,7 @@ export async function handleMyCSz420Command(interaction) {
     
     const dailyYield = formatTokenAmount(row.daily_yield);
     const unclaimedBalance = formatTokenAmount(row.unclaimed_balance);
-    const actualBalance = formatTokenAmount(row.actual_balance);
+    const formattedActualBalance = formatTokenAmount(row.actual_balance);
     
     const fields = [
       {
@@ -246,7 +246,7 @@ export async function handleMyCSz420Command(interaction) {
       },
       {
         name: 'Balance',
-        value: `${actualBalance} $CSz420`,
+        value: `${formattedActualBalance} $CSz420`,
         inline: true
       }
     ];
