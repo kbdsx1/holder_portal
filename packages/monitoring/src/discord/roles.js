@@ -265,6 +265,12 @@ function checkRoleEligibility(userRoles, role) {
       if (role.name === 'BUXDAO 5') {
         isEligible = userRoles.buxdao_5;
       }
+      // COLLECTOR and other special roles are stored in JSONB, check at top handles them
+      break;
+
+    case 'level':
+      // Level roles are stored in JSONB array, check at top handles them
+      // Only the highest level role should be in the array
       break;
 
     case 'collab':

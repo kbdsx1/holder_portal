@@ -152,8 +152,17 @@ export default async function handler(req, res) {
           return false;
         }
         case 'special': {
-          // BUXDAO 5 etc.
-          return role.name === 'BUXDAO 5' ? !!userRoles.buxdao_5 : false;
+          // BUXDAO 5, COLLECTOR etc.
+          if (role.name === 'BUXDAO 5') {
+            return !!userRoles.buxdao_5;
+          }
+          // COLLECTOR and other special roles are stored in JSONB, check at top handles them
+          return false;
+        }
+        case 'level': {
+          // Level roles are stored in JSONB array, check at top handles them
+          // Only the highest level role should be in the array
+          return false;
         }
         default:
           return false;
