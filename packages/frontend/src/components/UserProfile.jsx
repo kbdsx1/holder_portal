@@ -428,7 +428,8 @@ const UserProfile = () => {
                     ];
                     
                     const totalCount = counts.total || rows.reduce((sum, row) => sum + row.count, 0);
-                    const totalYield = dailyYields.total || userData.primaryCollection.dailyYield || 0;
+                    // Calculate NFT-only total yield (exclude cNFTs)
+                    const totalYield = rows.reduce((sum, row) => sum + (row.yield || 0), 0);
                     
                     return (
                       <>

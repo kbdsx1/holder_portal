@@ -151,11 +151,14 @@ export default async function handler(req, res) {
         cnfts = cnftResult.rows;
       }
 
+      // Calculate NFT-only daily yield (exclude cNFTs)
+      const nftOnlyDailyYield = Object.values(dailyYields).reduce((sum, dailyYield) => sum + dailyYield, 0);
+      
       return res.json({
         collection: {
           name: 'CannaSolz',
           count: counts.total_count || 0,
-          daily_yield: totalDailyYield
+          daily_yield: totalDailyYield // Total includes both NFTs and cNFTs for overall calculation
         },
         counts: {
           og420: counts.og420_count || 0,
@@ -181,7 +184,7 @@ export default async function handler(req, res) {
           purple: dailyYields.purple,
           dark_green: dailyYields.dark_green,
           light_green: dailyYields.light_green,
-          total: totalDailyYield
+          total: Object.values(dailyYields).reduce((sum, y) => sum + y, 0) // NFT-only total (exclude cNFTs)
         },
         cnft_daily_yields: {
           gold: cnftDailyYields.gold,
