@@ -726,7 +726,7 @@ export async function handlePayCommand(interaction) {
           thumbnail: avatarUrl ? { url: avatarUrl } : undefined,
           fields: [
             {
-              name: 'User Credited',
+              name: `${username} Credited`,
               value: `${formatTokenAmount(amount)} $CSz420`,
               inline: false
             },
