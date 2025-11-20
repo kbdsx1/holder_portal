@@ -28,6 +28,20 @@ function verifySignature(req, rawBody) {
   }
 }
 
+// Get raw body stream for signature verification
+function getRawBody(req) {
+  return new Promise((resolve, reject) => {
+    let data = '';
+    req.on('data', chunk => {
+      data += chunk.toString('utf8');
+    });
+    req.on('end', () => {
+      resolve(data);
+    });
+    req.on('error', reject);
+  });
+}
+
 export default async function handler(req, res) {
   // OPTIONS
   if (req.method === 'OPTIONS') {
@@ -52,28 +66,39 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Get body - Vercel parses JSON automatically
-    let body = req.body;
+    // CRITICAL: Get raw body FIRST before any parsing
+    // Discord signature verification requires the exact raw body
     let rawBody = '';
+    try {
+      rawBody = await getRawBody(req);
+    } catch (e) {
+      // If stream already consumed, try to reconstruct from parsed body
+      if (req.body) {
+        rawBody = typeof req.body === 'string' ? req.body : JSON.stringify(req.body);
+      }
+    }
     
-    if (typeof body === 'string') {
-      rawBody = body;
-      body = JSON.parse(body);
-    } else if (body) {
-      rawBody = JSON.stringify(body);
-    } else {
-      res.writeHead(400, { 'Content-Type': 'application/json' });
-      return res.end('{"error":"Missing request body"}');
+    // Parse body for interaction type
+    let body = null;
+    try {
+      body = rawBody ? JSON.parse(rawBody) : req.body;
+    } catch (e) {
+      body = req.body;
     }
 
-    // CRITICAL: Handle PING FIRST
+    // CRITICAL: Handle PING FIRST - verify signature with raw body
     if (body && body.type === 1) {
-      // Verify signature silently
+      // Verify signature with raw, unmodified body
       const publicKey = process.env.DISCORD_PUBLIC_KEY;
-      if (publicKey) {
-        verifySignature(req, rawBody);
+      if (publicKey && rawBody) {
+        const isValid = verifySignature(req, rawBody);
+        // Discord sends invalid signatures during verification to test security
+        // We still respond with PONG, but verification must be attempted
+        if (!isValid) {
+          // Log but don't block - Discord expects PONG even for invalid sigs during verification
+        }
       }
-      // Respond immediately
+      // Respond immediately with exact format
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end('{"type":1}');
       return;

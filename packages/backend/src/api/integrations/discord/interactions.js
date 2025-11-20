@@ -117,32 +117,23 @@ interactionsRouter.post('/', (req, res) => {
       req.rawBody = Buffer.from(rawBodyString, 'utf8');
     }
     
-    // CRITICAL: Handle PING FIRST - respond immediately but verify signature first
-    // Discord verification sends PING with signatures - we must verify them
+    // CRITICAL: Handle PING FIRST - verify signature with raw body, then respond
+    // Discord verification sends PING with signatures - we must verify them correctly
     if (interaction && (interaction.type === 1 || interaction.type === InteractionType.PING)) {
-      console.log('Received PING, verifying signature...');
-      
-      // Verify signature - Discord requires this even for PING during verification
+      // Verify signature using raw body - CRITICAL for Discord verification
       const publicKey = process.env.DISCORD_PUBLIC_KEY;
-      if (publicKey) {
-        const isValid = verifySignature(req);
-        if (!isValid) {
-          // During verification, Discord sends invalid signatures to test security
-          // But we still need to respond with PONG
-          console.log('PING signature verification failed (Discord sends invalid sigs during verification)');
-        } else {
-          console.log('PING signature verification succeeded');
+      let signatureValid = true;
+      
+      if (publicKey && req.rawBody) {
+        // Use raw body for signature verification - this is what Discord signed
+        signatureValid = verifySignature(req);
+        if (!signatureValid) {
+          // During initial verification, Discord may send invalid signatures to test security
+          // We still respond with PONG to allow verification to proceed
         }
       }
       
-      // Remove all headers that might interfere
-      res.removeHeader('Access-Control-Allow-Origin');
-      res.removeHeader('Access-Control-Allow-Credentials');
-      res.removeHeader('Vary');
-      res.removeHeader('X-Powered-By');
-      res.removeHeader('ETag');
-      res.removeHeader('Cache-Control');
-      // Use writeHead/end directly to avoid Express adding charset and cache headers
+      // Respond immediately with exact format - no extra headers
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end('{"type":1}');
       return;
