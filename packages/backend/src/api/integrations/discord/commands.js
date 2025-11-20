@@ -1,6 +1,6 @@
 import axios from 'axios';
-import dbPool from '../config/database.js';
-import { getRuntimeConfig } from '../config/runtime.js';
+import dbPool from '../../config/database.js';
+import { getRuntimeConfig } from '../../../config/runtime.js';
 
 // Discord interaction types
 const InteractionType = {
