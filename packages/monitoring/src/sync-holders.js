@@ -60,30 +60,55 @@ async function main() {
     client = await dbPool.connect();
     await client.query('BEGIN');
     for (const holder of currentHolders) {
+      // Try to get Discord ID/name from user_wallets for this wallet
+      const walletInfo = await client.query(
+        `SELECT discord_id, discord_name FROM user_wallets WHERE wallet_address = $1 LIMIT 1`,
+        [holder.address]
+      );
+      
+      const discordId = walletInfo.rows[0]?.discord_id || null;
+      const discordName = walletInfo.rows[0]?.discord_name || null;
+      
       await client.query(
-        `INSERT INTO token_holders (wallet_address, balance, last_updated)
-         VALUES ($1, $2, CURRENT_TIMESTAMP)
+        `INSERT INTO token_holders (wallet_address, balance, last_updated, owner_discord_id, owner_name)
+         VALUES ($1, $2, CURRENT_TIMESTAMP, $3, $4)
          ON CONFLICT (wallet_address) 
          DO UPDATE SET 
            balance = $2,
-           last_updated = CURRENT_TIMESTAMP
-           -- Preserve existing owner_discord_id and owner_name - never clear or update them`,
-        [holder.address, holder.balance]
+           last_updated = CURRENT_TIMESTAMP,
+           owner_discord_id = COALESCE(NULLIF(token_holders.owner_discord_id, ''), $3),
+           owner_name = COALESCE(NULLIF(token_holders.owner_name, ''), $4)`,
+        [holder.address, holder.balance, discordId, discordName]
       );
     }
     
-    // Backfill Discord IDs and names from user_wallets for any missing values
+    // Backfill Discord IDs and names from user_wallets for ANY matching wallets
+    // This ensures we always populate Discord IDs/names when we have wallet matches
     console.log('Backfilling Discord IDs and names from user_wallets...');
     const backfillResult = await client.query(
       `UPDATE token_holders th
        SET 
-         owner_discord_id = COALESCE(th.owner_discord_id, uw.discord_id),
-         owner_name = COALESCE(th.owner_name, uw.discord_name)
+         owner_discord_id = COALESCE(NULLIF(th.owner_discord_id, ''), uw.discord_id),
+         owner_name = COALESCE(NULLIF(th.owner_name, ''), uw.discord_name)
        FROM user_wallets uw
        WHERE th.wallet_address = uw.wallet_address
          AND (th.owner_discord_id IS NULL OR th.owner_discord_id = '' OR th.owner_name IS NULL OR th.owner_name = '')`
     );
     console.log(`Backfilled ${backfillResult.rowCount} token_holders with Discord IDs/names`);
+    
+    // Also update existing rows that have empty strings to ensure they get populated
+    const backfillEmptyResult = await client.query(
+      `UPDATE token_holders th
+       SET 
+         owner_discord_id = uw.discord_id,
+         owner_name = uw.discord_name
+       FROM user_wallets uw
+       WHERE th.wallet_address = uw.wallet_address
+         AND (th.owner_discord_id = '' OR th.owner_name = '')`
+    );
+    if (backfillEmptyResult.rowCount > 0) {
+      console.log(`Fixed ${backfillEmptyResult.rowCount} rows with empty strings`);
+    }
     
     const addresses = currentHolders.map(h => h.address);
     if (addresses.length > 0) {
