@@ -398,7 +398,7 @@ const UserProfile = () => {
                     <th className="py-2 text-fuchsia-300 text-center">Count</th>
                     <th className="py-2 text-fuchsia-300 text-center">
                       <div>Daily Yield</div>
-                      <div className="text-xs opacity-80">($KBDS)</div>
+                      <div className="text-xs opacity-80">($KNUKL)</div>
                     </th>
                   </tr>
                 </thead>
@@ -442,15 +442,15 @@ const UserProfile = () => {
                         </>
                       );
                     } else if (activeTab === 'yotr') {
-                      // YOTR table
+                      // YOTR table - use YOTR-specific counts
                       const rows = [
-                        { key: 'underground', label: 'Underground', count: counts.underground || 0, yield: dailyYields.underground || 0 },
-                        { key: 'outer', label: 'Outer', count: counts.outer || 0, yield: dailyYields.outer || 0 },
-                        { key: 'motor_city', label: 'Motor City', count: counts.motor_city || 0, yield: dailyYields.motor_city || 0 },
-                        { key: 'neon_row', label: 'Neon Row', count: counts.neon_row || 0, yield: dailyYields.neon_row || 0 },
-                        { key: 'city_gardens', label: 'City Gardens', count: counts.city_gardens || 0, yield: dailyYields.city_gardens || 0 },
-                        { key: 'stream_town', label: 'Stream Town', count: counts.stream_town || 0, yield: dailyYields.stream_town || 0 },
-                        { key: 'jabberjaw', label: 'Jabberjaw', count: counts.jabberjaw || 0, yield: dailyYields.jabberjaw || 0 },
+                        { key: 'underground', label: 'Underground', count: counts.yotr_underground || 0, yield: dailyYields.yotr_underground || 0 },
+                        { key: 'outer', label: 'Outer', count: counts.yotr_outer || 0, yield: dailyYields.yotr_outer || 0 },
+                        { key: 'motor_city', label: 'Motor City', count: counts.yotr_motor_city || 0, yield: dailyYields.yotr_motor_city || 0 },
+                        { key: 'neon_row', label: 'Neon Row', count: counts.yotr_neon_row || 0, yield: dailyYields.yotr_neon_row || 0 },
+                        { key: 'city_gardens', label: 'City Gardens', count: counts.yotr_city_gardens || 0, yield: dailyYields.yotr_city_gardens || 0 },
+                        { key: 'stream_town', label: 'Stream Town', count: counts.yotr_stream_town || 0, yield: dailyYields.yotr_stream_town || 0 },
+                        { key: 'jabberjaw', label: 'Jabberjaw', count: counts.yotr_jabberjaw || 0, yield: dailyYields.yotr_jabberjaw || 0 },
                         { key: 'nomad', label: 'Nomad', count: counts.nomad || 0, yield: dailyYields.nomad || 0 }
                       ];
                       
@@ -621,7 +621,7 @@ const UserProfile = () => {
           <div className="mb-6">
             <p className="text-fuchsia-300 mb-2">Unclaimed Balance</p>
             <p className="text-2xl font-bold text-white mb-3">
-              {Number(userData?.unclaimed_rewards || 0).toFixed(2)} $KBDS
+              {Number(userData?.unclaimed_rewards || 0).toFixed(2)} $KNUKL
             </p>
             <div className="space-y-3">
               <div className="relative">

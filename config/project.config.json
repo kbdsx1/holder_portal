@@ -28,12 +28,12 @@
     }
   ],
   "rewards": {
-    "currency": "KBDS",
+    "currency": "KNUKL",
     "treasuryWallet": "",
     "claimProgramId": "",
     "dailyEmission": 10,
     "cooldownHours": 24,
-    "tokenMint": ""
+    "tokenMint": "6sYhJZDwqHpv1shyVeZ91tx8QYSiHJh2bio97Qdhq1br"
   },
   "frontend": {
     "apiBaseUrl": "http://localhost:3001",

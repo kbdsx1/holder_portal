@@ -135,7 +135,7 @@ function UserMenu() {
       {open && (
         <div className="user-menu-dropdown">
           <div className="dropdown-item balance">
-            <span>$KBDS</span>
+            <span>$KNUKL</span>
             <strong>{csBalance}</strong>
           </div>
           

@@ -39,19 +39,37 @@ export default async function handler(req, res) {
         client.query(
           `
             SELECT 
-              COALESCE(gold_count, 0) as gold_count,
-              COALESCE(silver_count, 0) as silver_count,
-              COALESCE(purple_count, 0) as purple_count,
-              COALESCE(dark_green_count, 0) as dark_green_count,
-              COALESCE(light_green_count, 0) as light_green_count,
-              COALESCE(og420_count, 0) as og420_count,
-              COALESCE(total_count, 0) as total_count,
-              COALESCE(cnft_gold_count, 0) as cnft_gold_count,
-              COALESCE(cnft_silver_count, 0) as cnft_silver_count,
-              COALESCE(cnft_purple_count, 0) as cnft_purple_count,
-              COALESCE(cnft_dark_green_count, 0) as cnft_dark_green_count,
-              COALESCE(cnft_light_green_count, 0) as cnft_light_green_count,
-              COALESCE(cnft_total_count, 0) as cnft_total_count
+              -- OG Collection burrow counts
+              COALESCE(underground_count, 0) as underground_count,
+              COALESCE(outer_count, 0) as outer_count,
+              COALESCE(motor_city_count, 0) as motor_city_count,
+              COALESCE(neon_row_count, 0) as neon_row_count,
+              COALESCE(city_gardens_count, 0) as city_gardens_count,
+              COALESCE(stream_town_count, 0) as stream_town_count,
+              COALESCE(jabberjaw_count, 0) as jabberjaw_count,
+              COALESCE(none_count, 0) as none_count,
+              COALESCE(og_total_count, 0) as og_total_count,
+              -- YOTR Collection burrow counts
+              COALESCE(yotr_underground_count, 0) as yotr_underground_count,
+              COALESCE(yotr_outer_count, 0) as yotr_outer_count,
+              COALESCE(yotr_motor_city_count, 0) as yotr_motor_city_count,
+              COALESCE(yotr_neon_row_count, 0) as yotr_neon_row_count,
+              COALESCE(yotr_city_gardens_count, 0) as yotr_city_gardens_count,
+              COALESCE(yotr_stream_town_count, 0) as yotr_stream_town_count,
+              COALESCE(yotr_jabberjaw_count, 0) as yotr_jabberjaw_count,
+              COALESCE(yotr_nomad_count, 0) as yotr_nomad_count,
+              COALESCE(yotr_total_count, 0) as yotr_total_count,
+              -- Art and Pinups
+              COALESCE(art_count, 0) as art_count,
+              COALESCE(pinups_total_count, 0) as pinups_total_count,
+              COALESCE(pinups_underground_count, 0) as pinups_underground_count,
+              COALESCE(pinups_outer_count, 0) as pinups_outer_count,
+              COALESCE(pinups_motor_city_count, 0) as pinups_motor_city_count,
+              COALESCE(pinups_neon_row_count, 0) as pinups_neon_row_count,
+              COALESCE(pinups_city_gardens_count, 0) as pinups_city_gardens_count,
+              COALESCE(pinups_stream_town_count, 0) as pinups_stream_town_count,
+              COALESCE(pinups_jabberjaw_count, 0) as pinups_jabberjaw_count,
+              COALESCE(total_count, 0) as total_count
             FROM collection_counts
             WHERE discord_id = $1
           `,
@@ -70,132 +88,151 @@ export default async function handler(req, res) {
       const counts = countsResult.rows[0] || {};
       const walletAddresses = walletsResult.rows.map(row => row.wallet_address).filter(Boolean);
       
-      // Extract cNFT counts from collection_counts
-      const cnftCounts = {
-        gold: counts.cnft_gold_count || 0,
-        silver: counts.cnft_silver_count || 0,
-        purple: counts.cnft_purple_count || 0,
-        dark_green: counts.cnft_dark_green_count || 0,
-        light_green: counts.cnft_light_green_count || 0,
-        total: counts.cnft_total_count || 0
-      };
-
-      // Daily yield rates per NFT (regular NFTs)
+      // Daily yield rates (placeholder - update with actual rates)
       const yieldRates = {
-        og420: 20,
-        gold: 30,
-        silver: 25,
-        purple: 20,
-        dark_green: 15,
-        light_green: 10
+        underground: 1,
+        outer: 1,
+        motor_city: 1,
+        neon_row: 1,
+        city_gardens: 1,
+        stream_town: 1,
+        jabberjaw: 1,
+        none: 1,
+        nomad: 1,
+        art: 1,
+        pinups: 1
       };
 
-      // Daily yield rates per cNFT (seedlings)
-      const cnftYieldRates = {
-        gold: 5,
-        silver: 4,
-        purple: 3,
-        dark_green: 2,
-        light_green: 1
+      // Calculate daily yields for OG burrows
+      const ogDailyYields = {
+        underground: (counts.underground_count || 0) * yieldRates.underground,
+        outer: (counts.outer_count || 0) * yieldRates.outer,
+        motor_city: (counts.motor_city_count || 0) * yieldRates.motor_city,
+        neon_row: (counts.neon_row_count || 0) * yieldRates.neon_row,
+        city_gardens: (counts.city_gardens_count || 0) * yieldRates.city_gardens,
+        stream_town: (counts.stream_town_count || 0) * yieldRates.stream_town,
+        jabberjaw: (counts.jabberjaw_count || 0) * yieldRates.jabberjaw,
+        none: (counts.none_count || 0) * yieldRates.none
       };
 
-      // Calculate daily yield for each color (regular NFTs)
-      const dailyYields = {
-        og420: (counts.og420_count || 0) * yieldRates.og420,
-        gold: (counts.gold_count || 0) * yieldRates.gold,
-        silver: (counts.silver_count || 0) * yieldRates.silver,
-        purple: (counts.purple_count || 0) * yieldRates.purple,
-        dark_green: (counts.dark_green_count || 0) * yieldRates.dark_green,
-        light_green: (counts.light_green_count || 0) * yieldRates.light_green
+      // Calculate daily yields for YOTR burrows
+      const yotrDailyYields = {
+        underground: (counts.yotr_underground_count || 0) * yieldRates.underground,
+        outer: (counts.yotr_outer_count || 0) * yieldRates.outer,
+        motor_city: (counts.yotr_motor_city_count || 0) * yieldRates.motor_city,
+        neon_row: (counts.yotr_neon_row_count || 0) * yieldRates.neon_row,
+        city_gardens: (counts.yotr_city_gardens_count || 0) * yieldRates.city_gardens,
+        stream_town: (counts.yotr_stream_town_count || 0) * yieldRates.stream_town,
+        jabberjaw: (counts.yotr_jabberjaw_count || 0) * yieldRates.jabberjaw,
+        nomad: (counts.yotr_nomad_count || 0) * yieldRates.nomad
       };
 
-      // Calculate daily yield for each color (cNFTs)
-      const cnftDailyYields = {
-        gold: (Number(cnftCounts.gold) || 0) * cnftYieldRates.gold,
-        silver: (Number(cnftCounts.silver) || 0) * cnftYieldRates.silver,
-        purple: (Number(cnftCounts.purple) || 0) * cnftYieldRates.purple,
-        dark_green: (Number(cnftCounts.dark_green) || 0) * cnftYieldRates.dark_green,
-        light_green: (Number(cnftCounts.light_green) || 0) * cnftYieldRates.light_green
+      // Calculate daily yields for Pinups burrows
+      const pinupsDailyYields = {
+        underground: (counts.pinups_underground_count || 0) * yieldRates.underground,
+        outer: (counts.pinups_outer_count || 0) * yieldRates.outer,
+        motor_city: (counts.pinups_motor_city_count || 0) * yieldRates.motor_city,
+        neon_row: (counts.pinups_neon_row_count || 0) * yieldRates.neon_row,
+        city_gardens: (counts.pinups_city_gardens_count || 0) * yieldRates.city_gardens,
+        stream_town: (counts.pinups_stream_town_count || 0) * yieldRates.stream_town,
+        jabberjaw: (counts.pinups_jabberjaw_count || 0) * yieldRates.jabberjaw
       };
 
-      // Total daily yield (NFTs + cNFTs)
-      const totalDailyYield = Object.values(dailyYields).reduce((sum, dailyYield) => sum + dailyYield, 0) +
-                              Object.values(cnftDailyYields).reduce((sum, dailyYield) => sum + dailyYield, 0);
+      // Art and Pinups totals
+      const artDailyYield = (counts.art_count || 0) * yieldRates.art;
+      const pinupsDailyYield = (counts.pinups_total_count || 0) * yieldRates.pinups;
 
       let nfts = [];
-      let cnfts = [];
       if (walletAddresses.length > 0) {
-        const [nftResult, cnftResult] = await Promise.all([
-          client.query(
-            `
-              SELECT mint_address, name, image_url, leaf_colour, og420
-              FROM nft_metadata
-              WHERE owner_wallet = ANY($1::text[])
-              AND (symbol IS NULL OR symbol NOT LIKE 'seedling_%')
-              ORDER BY name NULLS LAST
-            `,
-            [walletAddresses]
-          ),
-          client.query(
+        const nftResult = await client.query(
           `
-              SELECT mint_address, name, image_url, symbol
+            SELECT mint_address, name, image_url, symbol, burrows
             FROM nft_metadata
             WHERE owner_wallet = ANY($1::text[])
-              AND symbol LIKE 'seedling_%'
-            ORDER BY name NULLS LAST
+            AND symbol IN ('KBDS_OG', 'KBDS_YOTR', 'KBDS_ART', 'KBDS_PINUPS')
+            ORDER BY symbol, name NULLS LAST
           `,
           [walletAddresses]
-          )
-        ]);
+        );
         nfts = nftResult.rows;
-        cnfts = cnftResult.rows;
       }
 
-      // Calculate NFT-only daily yield (exclude cNFTs)
-      const nftOnlyDailyYield = Object.values(dailyYields).reduce((sum, dailyYield) => sum + dailyYield, 0);
+      // Calculate total daily yield
+      const totalDailyYield = 
+        Object.values(ogDailyYields).reduce((sum, y) => sum + y, 0) +
+        Object.values(yotrDailyYields).reduce((sum, y) => sum + y, 0) +
+        artDailyYield +
+        pinupsDailyYield;
       
       return res.json({
         collection: {
           name: 'Knuckle Bunny Death Squad',
           count: counts.total_count || 0,
-          daily_yield: totalDailyYield // Total includes both NFTs and cNFTs for overall calculation
+          daily_yield: totalDailyYield
         },
         counts: {
-          og420: counts.og420_count || 0,
-          gold: counts.gold_count || 0,
-          silver: counts.silver_count || 0,
-          purple: counts.purple_count || 0,
-          dark_green: counts.dark_green_count || 0,
-          light_green: counts.light_green_count || 0,
-          total: counts.total_count || 0
-        },
-        cnft_counts: {
-          gold: Number(cnftCounts.gold) || 0,
-          silver: Number(cnftCounts.silver) || 0,
-          purple: Number(cnftCounts.purple) || 0,
-          dark_green: Number(cnftCounts.dark_green) || 0,
-          light_green: Number(cnftCounts.light_green) || 0,
-          total: Number(cnftCounts.total) || 0
+          // OG burrows (used by OGs tab)
+          underground: counts.underground_count || 0,
+          outer: counts.outer_count || 0,
+          motor_city: counts.motor_city_count || 0,
+          neon_row: counts.neon_row_count || 0,
+          city_gardens: counts.city_gardens_count || 0,
+          stream_town: counts.stream_town_count || 0,
+          jabberjaw: counts.jabberjaw_count || 0,
+          none: counts.none_count || 0,
+          // YOTR burrows (used by YOTR tab)
+          yotr_underground: counts.yotr_underground_count || 0,
+          yotr_outer: counts.yotr_outer_count || 0,
+          yotr_motor_city: counts.yotr_motor_city_count || 0,
+          yotr_neon_row: counts.yotr_neon_row_count || 0,
+          yotr_city_gardens: counts.yotr_city_gardens_count || 0,
+          yotr_stream_town: counts.yotr_stream_town_count || 0,
+          yotr_jabberjaw: counts.yotr_jabberjaw_count || 0,
+          nomad: counts.yotr_nomad_count || 0,
+          // Others
+          art: counts.art_count || 0,
+          pinups: counts.pinups_total_count || 0,
+          // Pinups burrows
+          pinups_underground: counts.pinups_underground_count || 0,
+          pinups_outer: counts.pinups_outer_count || 0,
+          pinups_motor_city: counts.pinups_motor_city_count || 0,
+          pinups_neon_row: counts.pinups_neon_row_count || 0,
+          pinups_city_gardens: counts.pinups_city_gardens_count || 0,
+          pinups_stream_town: counts.pinups_stream_town_count || 0,
+          pinups_jabberjaw: counts.pinups_jabberjaw_count || 0
         },
         daily_yields: {
-          og420: dailyYields.og420,
-          gold: dailyYields.gold,
-          silver: dailyYields.silver,
-          purple: dailyYields.purple,
-          dark_green: dailyYields.dark_green,
-          light_green: dailyYields.light_green,
-          total: Object.values(dailyYields).reduce((sum, y) => sum + y, 0) // NFT-only total (exclude cNFTs)
+          // OG burrows
+          underground: ogDailyYields.underground,
+          outer: ogDailyYields.outer,
+          motor_city: ogDailyYields.motor_city,
+          neon_row: ogDailyYields.neon_row,
+          city_gardens: ogDailyYields.city_gardens,
+          stream_town: ogDailyYields.stream_town,
+          jabberjaw: ogDailyYields.jabberjaw,
+          none: ogDailyYields.none,
+          // YOTR burrows
+          yotr_underground: yotrDailyYields.underground,
+          yotr_outer: yotrDailyYields.outer,
+          yotr_motor_city: yotrDailyYields.motor_city,
+          yotr_neon_row: yotrDailyYields.neon_row,
+          yotr_city_gardens: yotrDailyYields.city_gardens,
+          yotr_stream_town: yotrDailyYields.stream_town,
+          yotr_jabberjaw: yotrDailyYields.jabberjaw,
+          nomad: yotrDailyYields.nomad,
+          // Others
+          art: artDailyYield,
+          pinups: pinupsDailyYield,
+          // Pinups burrows
+          pinups_underground: pinupsDailyYields.underground,
+          pinups_outer: pinupsDailyYields.outer,
+          pinups_motor_city: pinupsDailyYields.motor_city,
+          pinups_neon_row: pinupsDailyYields.neon_row,
+          pinups_city_gardens: pinupsDailyYields.city_gardens,
+          pinups_stream_town: pinupsDailyYields.stream_town,
+          pinups_jabberjaw: pinupsDailyYields.jabberjaw
         },
-        cnft_daily_yields: {
-          gold: cnftDailyYields.gold,
-          silver: cnftDailyYields.silver,
-          purple: cnftDailyYields.purple,
-          dark_green: cnftDailyYields.dark_green,
-          light_green: cnftDailyYields.light_green,
-          total: Object.values(cnftDailyYields).reduce((sum, y) => sum + y, 0)
-        },
-        nfts,
-        cnfts
+        nfts
       });
     } finally {
       client.release();

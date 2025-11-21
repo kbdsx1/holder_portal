@@ -113,29 +113,54 @@ userWalletsRouter.post('/', async (req, res) => {
       `
         INSERT INTO collection_counts (
           discord_id, discord_name,
-          gold_count, silver_count, purple_count, dark_green_count, light_green_count,
-          og420_count, total_count,
-          cnft_gold_count, cnft_silver_count, cnft_purple_count, cnft_dark_green_count, cnft_light_green_count, cnft_total_count,
-          last_updated
+          -- OG Collection burrow counts
+          underground_count, outer_count, motor_city_count, neon_row_count,
+          city_gardens_count, stream_town_count, jabberjaw_count, none_count, og_total_count,
+          -- YOTR Collection burrow counts
+          yotr_underground_count, yotr_outer_count, yotr_motor_city_count, yotr_neon_row_count,
+          yotr_city_gardens_count, yotr_stream_town_count, yotr_jabberjaw_count, yotr_nomad_count, yotr_total_count,
+          -- Art and Pinups
+          art_count,
+          pinups_total_count, pinups_underground_count, pinups_outer_count, pinups_motor_city_count,
+          pinups_neon_row_count, pinups_city_gardens_count, pinups_stream_town_count, pinups_jabberjaw_count,
+          total_count, last_updated
         )
         SELECT
           $1::varchar AS discord_id,
           $2::varchar AS discord_name,
-          -- Regular NFTs by leaf_colour (exclude cNFTs)
-          COUNT(*) FILTER (WHERE nm.leaf_colour = 'Gold' AND (nm.symbol IS NULL OR nm.symbol NOT LIKE 'seedling_%')) AS gold_count,
-          COUNT(*) FILTER (WHERE nm.leaf_colour = 'Silver' AND (nm.symbol IS NULL OR nm.symbol NOT LIKE 'seedling_%')) AS silver_count,
-          COUNT(*) FILTER (WHERE nm.leaf_colour = 'Purple' AND (nm.symbol IS NULL OR nm.symbol NOT LIKE 'seedling_%')) AS purple_count,
-          COUNT(*) FILTER (WHERE nm.leaf_colour = 'Dark green' AND (nm.symbol IS NULL OR nm.symbol NOT LIKE 'seedling_%')) AS dark_green_count,
-          COUNT(*) FILTER (WHERE nm.leaf_colour = 'Light green' AND (nm.symbol IS NULL OR nm.symbol NOT LIKE 'seedling_%')) AS light_green_count,
-          COUNT(*) FILTER (WHERE nm.og420 = TRUE) AS og420_count,
-          COUNT(*) FILTER (WHERE nm.symbol IS NULL OR nm.symbol NOT LIKE 'seedling_%') AS total_count,
-          -- cNFTs by symbol
-          COUNT(*) FILTER (WHERE nm.symbol = 'seedling_gold') AS cnft_gold_count,
-          COUNT(*) FILTER (WHERE nm.symbol = 'seedling_silver') AS cnft_silver_count,
-          COUNT(*) FILTER (WHERE nm.symbol = 'seedling_purple') AS cnft_purple_count,
-          COUNT(*) FILTER (WHERE nm.symbol = 'seedling_dark_green') AS cnft_dark_green_count,
-          COUNT(*) FILTER (WHERE nm.symbol = 'seedling_light_green') AS cnft_light_green_count,
-          COUNT(*) FILTER (WHERE nm.symbol LIKE 'seedling_%') AS cnft_total_count,
+          -- OG Collection (KBDS_OG) burrow counts
+          COUNT(*) FILTER (WHERE nm.symbol = 'KBDS_OG' AND nm.burrows = 'Underground') AS underground_count,
+          COUNT(*) FILTER (WHERE nm.symbol = 'KBDS_OG' AND nm.burrows = 'Outer') AS outer_count,
+          COUNT(*) FILTER (WHERE nm.symbol = 'KBDS_OG' AND nm.burrows = 'Motor City') AS motor_city_count,
+          COUNT(*) FILTER (WHERE nm.symbol = 'KBDS_OG' AND nm.burrows = 'Neon Row') AS neon_row_count,
+          COUNT(*) FILTER (WHERE nm.symbol = 'KBDS_OG' AND nm.burrows = 'City Gardens') AS city_gardens_count,
+          COUNT(*) FILTER (WHERE nm.symbol = 'KBDS_OG' AND nm.burrows = 'Stream Town') AS stream_town_count,
+          COUNT(*) FILTER (WHERE nm.symbol = 'KBDS_OG' AND nm.burrows = 'Jabberjaw') AS jabberjaw_count,
+          COUNT(*) FILTER (WHERE nm.symbol = 'KBDS_OG' AND nm.burrows = 'None') AS none_count,
+          COUNT(*) FILTER (WHERE nm.symbol = 'KBDS_OG') AS og_total_count,
+          -- YOTR Collection (KBDS_YOTR) burrow counts
+          COUNT(*) FILTER (WHERE nm.symbol = 'KBDS_YOTR' AND nm.burrows = 'Underground') AS yotr_underground_count,
+          COUNT(*) FILTER (WHERE nm.symbol = 'KBDS_YOTR' AND nm.burrows = 'Outer') AS yotr_outer_count,
+          COUNT(*) FILTER (WHERE nm.symbol = 'KBDS_YOTR' AND nm.burrows = 'Motor City') AS yotr_motor_city_count,
+          COUNT(*) FILTER (WHERE nm.symbol = 'KBDS_YOTR' AND nm.burrows = 'Neon Row') AS yotr_neon_row_count,
+          COUNT(*) FILTER (WHERE nm.symbol = 'KBDS_YOTR' AND nm.burrows = 'City Gardens') AS yotr_city_gardens_count,
+          COUNT(*) FILTER (WHERE nm.symbol = 'KBDS_YOTR' AND nm.burrows = 'Stream Town') AS yotr_stream_town_count,
+          COUNT(*) FILTER (WHERE nm.symbol = 'KBDS_YOTR' AND nm.burrows = 'Jabberjaw') AS yotr_jabberjaw_count,
+          COUNT(*) FILTER (WHERE nm.symbol = 'KBDS_YOTR' AND nm.burrows = 'Nomad') AS yotr_nomad_count,
+          COUNT(*) FILTER (WHERE nm.symbol = 'KBDS_YOTR') AS yotr_total_count,
+          -- Art Collection (KBDS_ART)
+          COUNT(*) FILTER (WHERE nm.symbol = 'KBDS_ART') AS art_count,
+          -- Pinups Collection (KBDS_PINUPS) burrow counts
+          COUNT(*) FILTER (WHERE nm.symbol = 'KBDS_PINUPS') AS pinups_total_count,
+          COUNT(*) FILTER (WHERE nm.symbol = 'KBDS_PINUPS' AND nm.burrows = 'Underground') AS pinups_underground_count,
+          COUNT(*) FILTER (WHERE nm.symbol = 'KBDS_PINUPS' AND nm.burrows = 'Outer') AS pinups_outer_count,
+          COUNT(*) FILTER (WHERE nm.symbol = 'KBDS_PINUPS' AND nm.burrows = 'Motor City') AS pinups_motor_city_count,
+          COUNT(*) FILTER (WHERE nm.symbol = 'KBDS_PINUPS' AND nm.burrows = 'Neon Row') AS pinups_neon_row_count,
+          COUNT(*) FILTER (WHERE nm.symbol = 'KBDS_PINUPS' AND nm.burrows = 'City Gardens') AS pinups_city_gardens_count,
+          COUNT(*) FILTER (WHERE nm.symbol = 'KBDS_PINUPS' AND nm.burrows = 'Stream Town') AS pinups_stream_town_count,
+          COUNT(*) FILTER (WHERE nm.symbol = 'KBDS_PINUPS' AND nm.burrows = 'Jabberjaw') AS pinups_jabberjaw_count,
+          -- Total count (all KBDS collections)
+          COUNT(*) FILTER (WHERE nm.symbol IN ('KBDS_OG', 'KBDS_YOTR', 'KBDS_ART', 'KBDS_PINUPS')) AS total_count,
           NOW() AS last_updated
         FROM nft_metadata nm
         WHERE EXISTS (
@@ -145,26 +170,43 @@ userWalletsRouter.post('/', async (req, res) => {
         )
         ON CONFLICT (discord_id) DO UPDATE SET
           discord_name = EXCLUDED.discord_name,
-          gold_count = EXCLUDED.gold_count,
-          silver_count = EXCLUDED.silver_count,
-          purple_count = EXCLUDED.purple_count,
-          dark_green_count = EXCLUDED.dark_green_count,
-          light_green_count = EXCLUDED.light_green_count,
-          og420_count = EXCLUDED.og420_count,
+          -- OG Collection
+          underground_count = EXCLUDED.underground_count,
+          outer_count = EXCLUDED.outer_count,
+          motor_city_count = EXCLUDED.motor_city_count,
+          neon_row_count = EXCLUDED.neon_row_count,
+          city_gardens_count = EXCLUDED.city_gardens_count,
+          stream_town_count = EXCLUDED.stream_town_count,
+          jabberjaw_count = EXCLUDED.jabberjaw_count,
+          none_count = EXCLUDED.none_count,
+          og_total_count = EXCLUDED.og_total_count,
+          -- YOTR Collection
+          yotr_underground_count = EXCLUDED.yotr_underground_count,
+          yotr_outer_count = EXCLUDED.yotr_outer_count,
+          yotr_motor_city_count = EXCLUDED.yotr_motor_city_count,
+          yotr_neon_row_count = EXCLUDED.yotr_neon_row_count,
+          yotr_city_gardens_count = EXCLUDED.yotr_city_gardens_count,
+          yotr_stream_town_count = EXCLUDED.yotr_stream_town_count,
+          yotr_jabberjaw_count = EXCLUDED.yotr_jabberjaw_count,
+          yotr_nomad_count = EXCLUDED.yotr_nomad_count,
+          yotr_total_count = EXCLUDED.yotr_total_count,
+          -- Art and Pinups
+          art_count = EXCLUDED.art_count,
+          pinups_total_count = EXCLUDED.pinups_total_count,
+          pinups_underground_count = EXCLUDED.pinups_underground_count,
+          pinups_outer_count = EXCLUDED.pinups_outer_count,
+          pinups_motor_city_count = EXCLUDED.pinups_motor_city_count,
+          pinups_neon_row_count = EXCLUDED.pinups_neon_row_count,
+          pinups_city_gardens_count = EXCLUDED.pinups_city_gardens_count,
+          pinups_stream_town_count = EXCLUDED.pinups_stream_town_count,
+          pinups_jabberjaw_count = EXCLUDED.pinups_jabberjaw_count,
           total_count = EXCLUDED.total_count,
-          cnft_gold_count = EXCLUDED.cnft_gold_count,
-          cnft_silver_count = EXCLUDED.cnft_silver_count,
-          cnft_purple_count = EXCLUDED.cnft_purple_count,
-          cnft_dark_green_count = EXCLUDED.cnft_dark_green_count,
-          cnft_light_green_count = EXCLUDED.cnft_light_green_count,
-          cnft_total_count = EXCLUDED.cnft_total_count,
           last_updated = NOW()
       `,
       [discordId, discordName]
     );
 
-    // Ensure counts are recomputed (in case triggers are not present)
-    await dbPool.query('SELECT update_collection_counts($1::varchar)', [discordId]);
+    // Counts are automatically updated by the INSERT above
 
     // Attach wallet ownership on token_holders (preserves existing balance if any)
     await dbPool.query(
