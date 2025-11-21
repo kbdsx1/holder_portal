@@ -27,8 +27,8 @@ function getCallbackUrl(req) {
   if (envOverride) return envOverride;
   return `${getOrigin(req)}/api/auth/discord/callback`;
 }
-const DISCORD_CLIENT_ID = runtime.discord.clientId;
-const DISCORD_CLIENT_SECRET = runtime.discord.clientSecret;
+const DISCORD_CLIENT_ID = process.env.DISCORD_CLIENT_ID || runtime.discord.clientId;
+const DISCORD_CLIENT_SECRET = process.env.DISCORD_CLIENT_SECRET || runtime.discord.clientSecret;
 
 function mapDiscordUser(raw) {
   if (!raw) return null;
@@ -291,9 +291,12 @@ async function handleDiscordAuth(req, res) {
     // Force exact redirect URI to match Discord config
     const exactRedirectUri = process.env.DISCORD_REDIRECT_URI || 'https://kbds-black.vercel.app/api/auth/discord/callback';
     
+    // Get fresh client ID from env
+    const clientId = (process.env.DISCORD_CLIENT_ID || DISCORD_CLIENT_ID || '').trim();
+    
     // Build Discord OAuth URL with required parameters
     const params = new URLSearchParams({
-      client_id: DISCORD_CLIENT_ID.trim(),
+      client_id: clientId,
       redirect_uri: exactRedirectUri,
       response_type: 'code',
       scope: 'identify guilds.join',
@@ -376,9 +379,30 @@ async function handleDiscordCallback(req, res) {
     // Force exact redirect URI to match Discord config
     const exactRedirectUri = process.env.DISCORD_REDIRECT_URI || 'https://kbds-black.vercel.app/api/auth/discord/callback';
     
+    // Get fresh values from env (bypass runtime config)
+    const clientId = (process.env.DISCORD_CLIENT_ID || DISCORD_CLIENT_ID || '').trim();
+    const clientSecret = (process.env.DISCORD_CLIENT_SECRET || DISCORD_CLIENT_SECRET || '').trim();
+    
+    if (!clientId || !clientSecret) {
+      console.error('[Discord Callback] Missing credentials:', {
+        hasClientId: !!clientId,
+        hasClientSecret: !!clientSecret,
+        envClientId: !!process.env.DISCORD_CLIENT_ID,
+        envClientSecret: !!process.env.DISCORD_CLIENT_SECRET
+      });
+      res.setHeader('Location', `${FRONTEND_URL}/?error=${encodeURIComponent('Discord OAuth not configured')}`);
+      return res.status(302).end();
+    }
+    
+    console.log('[Discord Callback] Using credentials:', {
+      clientId: clientId,
+      clientSecretLength: clientSecret.length,
+      redirectUri: exactRedirectUri
+    });
+    
     const tokenParams = new URLSearchParams({
-      client_id: DISCORD_CLIENT_ID.trim(),
-      client_secret: DISCORD_CLIENT_SECRET.trim(),
+      client_id: clientId,
+      client_secret: clientSecret,
       grant_type: 'authorization_code',
       code: code,
       redirect_uri: exactRedirectUri
