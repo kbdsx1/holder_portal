@@ -382,8 +382,19 @@ async function handleDiscordCallback(req, res) {
       client_id: DISCORD_CLIENT_ID,
       grant_type: 'authorization_code',
       code: code.substring(0, 10) + '...',
-      redirect_uri: callbackUrl
+      redirect_uri: callbackUrl,
+      client_secret_length: DISCORD_CLIENT_SECRET?.length || 0,
+      client_secret_starts_with: DISCORD_CLIENT_SECRET?.substring(0, 5) || 'none'
     });
+    
+    // Verify redirect URI matches what's in Discord
+    const expectedRedirectUri = 'https://kbds-black.vercel.app/api/auth/discord/callback';
+    if (callbackUrl !== expectedRedirectUri) {
+      console.error('[Discord Callback] Redirect URI mismatch!', {
+        expected: expectedRedirectUri,
+        actual: callbackUrl
+      });
+    }
     
     const tokenResponse = await fetch('https://discord.com/api/oauth2/token', {
       method: 'POST',
