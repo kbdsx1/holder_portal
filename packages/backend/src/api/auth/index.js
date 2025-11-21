@@ -288,10 +288,13 @@ async function handleDiscordAuth(req, res) {
     console.log('[Discord Auth] State cookie options:', stateCookieOptions, 'cookieDomainRuntime:', runtime.cookies.domain, 'origin:', getOrigin(req));
     const stateCookie = serialize('discord_state', state, stateCookieOptions);
     
+    // Force exact redirect URI to match Discord config
+    const exactRedirectUri = process.env.DISCORD_REDIRECT_URI || 'https://kbds-black.vercel.app/api/auth/discord/callback';
+    
     // Build Discord OAuth URL with required parameters
     const params = new URLSearchParams({
-      client_id: DISCORD_CLIENT_ID,
-      redirect_uri: getCallbackUrl(req),
+      client_id: DISCORD_CLIENT_ID.trim(),
+      redirect_uri: exactRedirectUri,
       response_type: 'code',
       scope: 'identify guilds.join',
       state: state,
@@ -370,12 +373,15 @@ async function handleDiscordCallback(req, res) {
       'x-forwarded-proto': req.headers['x-forwarded-proto']
     });
     
+    // Force exact redirect URI to match Discord config
+    const exactRedirectUri = process.env.DISCORD_REDIRECT_URI || 'https://kbds-black.vercel.app/api/auth/discord/callback';
+    
     const tokenParams = new URLSearchParams({
-      client_id: DISCORD_CLIENT_ID,
-      client_secret: DISCORD_CLIENT_SECRET,
+      client_id: DISCORD_CLIENT_ID.trim(),
+      client_secret: DISCORD_CLIENT_SECRET.trim(),
       grant_type: 'authorization_code',
       code: code,
-      redirect_uri: callbackUrl
+      redirect_uri: exactRedirectUri
     });
     
     console.log('[Discord Callback] Token request params (without secret):', {
