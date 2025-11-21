@@ -426,19 +426,43 @@ async function handleDiscordCallback(req, res) {
       });
     }
     
+    // Log the exact request being sent (without exposing secret)
+    const requestBody = tokenParams.toString();
+    console.log('[Discord Callback] Token request URL: https://discord.com/api/oauth2/token');
+    console.log('[Discord Callback] Token request body (masked):', requestBody.replace(/client_secret=[^&]*/, 'client_secret=***'));
+    console.log('[Discord Callback] Client ID being used:', clientId);
+    console.log('[Discord Callback] Client Secret length:', clientSecret.length);
+    console.log('[Discord Callback] Redirect URI being used:', exactRedirectUri);
+    
     const tokenResponse = await fetch('https://discord.com/api/oauth2/token', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
-        'Accept': 'application/json'
+        'Accept': 'application/json',
+        'User-Agent': 'KBDS-Holder-Portal/1.0'
       },
-      body: tokenParams.toString()
+      body: requestBody
     });
 
     const tokenText = await tokenResponse.text();
     console.log('[Discord Callback] Token response status:', tokenResponse.status);
-    console.log('[Discord Callback] Token response headers:', tokenResponse.headers.raw());
     console.log('[Discord Callback] Token response body:', tokenText);
+    
+    // If invalid_client, log more details
+    if (tokenResponse.status === 401 || tokenText.includes('invalid_client')) {
+      try {
+        const errorData = JSON.parse(tokenText);
+        console.error('[Discord Callback] INVALID_CLIENT ERROR DETAILS:', {
+          error: errorData,
+          clientId: clientId,
+          clientSecretLength: clientSecret.length,
+          redirectUri: exactRedirectUri,
+          requestBodyLength: requestBody.length
+        });
+      } catch (e) {
+        console.error('[Discord Callback] Could not parse error response');
+      }
+    }
 
     if (!tokenResponse.ok) {
       console.error('[Discord Callback] Token error:', tokenText);
