@@ -12,6 +12,7 @@
     "bootstrap": "node ./scripts/bootstrap-env.mjs",
     "lint": "echo 'add linters per package'",
     "dev": "concurrently --names backend,frontend 'npm --workspace packages/backend run dev' 'npm --workspace packages/frontend run dev'",
+    "build": "npm run build --workspace=packages/frontend",
     "jobs": "npm --workspace packages/monitoring run start",
     "seed:nfts": "node ./scripts/seed-nft-metadata.mjs",
     "seed:token": "node ./scripts/seed-token-holders.mjs"

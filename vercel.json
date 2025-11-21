@@ -1,10 +1,15 @@
 {
   "installCommand": "npm ci",
-  "buildCommand": "npm run -w packages/frontend build",
+  "buildCommand": "npm run build",
   "outputDirectory": "packages/frontend/dist",
+  "functions": {
+    "api/**/*.mjs": {
+      "runtime": "nodejs20.x"
+    }
+  },
   "routes": [
-    { "src": "/favicon.ico", "dest": "/favicon.jpeg" },
-    { "src": "/favicon.png", "dest": "/favicon.jpeg" },
+    { "src": "/favicon.ico", "dest": "/favicon.jpg" },
+    { "src": "/favicon.png", "dest": "/favicon.jpg" },
     { "src": "/api/(.*)", "dest": "api/index.mjs" },
     { "src": "/health", "dest": "api/index.mjs" }
   ]
