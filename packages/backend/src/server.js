@@ -82,7 +82,7 @@ const wrapHandler = (handler) => async (req, res, next) => {
 };
 
 app.get('/health', (req, res) => {
-  res.json({ status: 'ok', project: runtime.project?.name || 'CannaSolz' });
+  res.json({ status: 'ok', project: runtime.project?.name || 'Knuckle Bunny Death Squad' });
 });
 
 app.use('/api/user', userRouter);

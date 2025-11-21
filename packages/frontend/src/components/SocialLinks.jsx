@@ -18,31 +18,22 @@ const SocialLinks = () => {
   return (
     <div className="social-links">
       <a
-        href="https://discord.gg/UW7XHAXK97"
+        href="https://discord.com/"
         target="_blank"
         rel="noopener noreferrer"
         className="social-link discord-link"
-        aria-label="Join CannaSolz Discord"
+        aria-label="Join Knuckle Bunny Death Squad Discord"
       >
         <DiscordIcon className="social-icon" />
       </a>
       <a
-        href="https://x.com/CannaSolz"
+        href="https://twitter.com/"
         target="_blank"
         rel="noopener noreferrer"
         className="social-link x-link"
-        aria-label="Follow CannaSolz on X"
+        aria-label="Follow Knuckle Bunny Death Squad on X"
       >
         <XIcon className="social-icon" />
-      </a>
-      <a
-        href="https://launchmynft.io/sol/540"
-        target="_blank"
-        rel="noopener noreferrer"
-        className="social-link mint-link"
-        aria-label="Mint CannaSolz Genesis NFT"
-      >
-        <span>Mint NFT</span>
       </a>
     </div>
   );

@@ -7,7 +7,7 @@ import { Connection, Transaction } from '@solana/web3.js';
 import BuxClaimButton from './BuxClaimButton';
 import { DiscordIcon } from './Icons';
 
-const NFT_PLACEHOLDER = 'https://img-cdn.magiceden.dev/rs:fill:400:0:0/plain/https%3A%2F%2Fcreator-hub-prod.s3.us-east-2.amazonaws.com%2Fcannasolz_pfp_1668579712636.png';
+const NFT_PLACEHOLDER = '';
 
 
 const UserProfile = () => {
@@ -17,7 +17,7 @@ const UserProfile = () => {
     wallet_address: discordUser?.wallet_address || '',
     balance: 0,
     unclaimed_rewards: 0,
-    primaryCollection: { name: 'CannaSolz', count: 0, dailyYield: 0 },
+    primaryCollection: { name: 'Knuckle Bunny Death Squad', count: 0, dailyYield: 0 },
     nfts: [],
     roles: []
   });
@@ -140,7 +140,7 @@ const UserProfile = () => {
           setUserData(prev => ({
             ...prev,
             primaryCollection: {
-              name: holdingsData.collection?.name || 'CannaSolz',
+              name: holdingsData.collection?.name || 'Knuckle Bunny Death Squad',
               count: holdingsData.collection?.count || 0,
               dailyYield: holdingsData.collection?.daily_yield || 0
             },
@@ -333,7 +333,7 @@ const UserProfile = () => {
 
   return (
     <div className="space-y-6">
-      <h2 className="text-6xl font-bold text-purple-400 text-center">My CannaSolz</h2>
+      <h2 className="text-6xl font-bold text-purple-400 text-center">My KBDS</h2>
       <div className="p-8 space-y-8 userprofile-wrap">
         {/* Top Row Grid - NFTs and Roles */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -372,7 +372,7 @@ const UserProfile = () => {
                     <th className="py-2 text-fuchsia-300 text-center">Count</th>
                     <th className="py-2 text-fuchsia-300 text-center">
                       <div>Daily Yield</div>
-                      <div className="text-xs opacity-80">($CSz420)</div>
+                      <div className="text-xs opacity-80">($KBDS)</div>
                     </th>
                   </tr>
                 </thead>
@@ -506,7 +506,7 @@ const UserProfile = () => {
           <div className="mb-6">
             <p className="text-fuchsia-300 mb-2">Unclaimed Balance</p>
             <p className="text-2xl font-bold text-white mb-3">
-              {Number(userData?.unclaimed_rewards || 0).toFixed(2)} $CSz420
+              {Number(userData?.unclaimed_rewards || 0).toFixed(2)} $KBDS
             </p>
             <div className="space-y-3">
               <div className="relative">

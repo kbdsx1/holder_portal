@@ -1,11 +1,12 @@
 {
   "project": {
-    "slug": "cannasolz",
-    "name": "CannaSolz",
+    "slug": "kbds",
+    "name": "Knuckle Bunny Death Squad",
     "description": "Holder verification, Discord roles, live sales bot, and rewards claims",
-    "primaryColor": "#1B4332",
-    "accentColor": "#95D5B2",
-    "logoPath": "src/assets/logo.svg"
+    "primaryColor": "#000000",
+    "accentColor": "#FFD700",
+    "backgroundColor": "#0a0a0a",
+    "logoPath": "/KBDS logo.jpg"
   },
   "discord": {
     "guildId": "000000000000000000",
@@ -18,27 +19,27 @@
   },
   "collections": [
     {
-      "symbol": "CNSZ",
-      "friendlyName": "CannaSolz Genesis",
+      "symbol": "KBDS",
+      "friendlyName": "Knuckle Bunny Death Squad",
       "mintAddresses": [],
       "holderRoleId": "000000000000000004",
       "minBalance": 1,
-      "collectionAddress": "5uJddP4MezyWfGuYjyPdvSnsSCsE86uHaTQHJRr1Zazg"
+      "collectionAddress": ""
     }
   ],
   "rewards": {
-    "currency": "CSz420",
-    "treasuryWallet": "FksThXsojjxkWuEdgmruo86vS2monx2jNEzeKiNpp4Ha",
+    "currency": "KBDS",
+    "treasuryWallet": "",
     "claimProgramId": "",
     "dailyEmission": 10,
     "cooldownHours": 24,
-    "tokenMint": "CSz42omfkxXMcrf74ppUtQ9VCbFkoo1A3Eoqnmuwyw7Y"
+    "tokenMint": ""
   },
   "frontend": {
     "apiBaseUrl": "http://localhost:3001",
     "appUrl": "http://localhost:5173"
   },
   "collectionCountColumns": {
-    "CNSZ": "collection_count_column"
+    "KBDS": "collection_count_column"
   }
 }

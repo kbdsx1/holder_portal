@@ -1,4 +1,4 @@
-# CannaSolz Core Services (White-Label)
+# Knuckle Bunny Death Squad (KBDS) Holder Portal
 
 This monorepo packages everything needed to launch a holder portal:
 

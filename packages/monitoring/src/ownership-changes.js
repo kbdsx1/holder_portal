@@ -25,7 +25,7 @@ async function fetchAssetsByCollection(page = 1) {
   const url = `https://mainnet.helius-rpc.com/?api-key=${HELIUS_API_KEY}`;
   const body = {
     jsonrpc: '2.0',
-    id: 'cannasolz-assets',
+    id: 'kbds-assets',
     method: 'getAssetsByGroup',
     params: {
       groupKey: 'collection',
@@ -97,9 +97,9 @@ async function run() {
         const current = rows[0];
         if (!current) {
           // Check current OG420 count to determine if this new NFT should be OG420
-          // Default to 'CNSZ' for CannaSolz collection
+          // Default to 'KBDS' for KBDS collection
           const og420CountResult = await client.query(
-            `SELECT COUNT(*) as count FROM nft_metadata WHERE symbol = 'CNSZ' AND og420 = TRUE`
+            `SELECT COUNT(*) as count FROM nft_metadata WHERE symbol = 'KBDS' AND og420 = TRUE`
           );
           const currentOg420Count = parseInt(og420CountResult.rows[0]?.count || 0);
           const isOg420 = currentOg420Count < 420;
@@ -107,7 +107,7 @@ async function run() {
           // Insert minimal row so next runs track it
           await client.query(
             'INSERT INTO nft_metadata (mint_address, name, owner_wallet, owner_discord_id, owner_name, symbol, og420) VALUES ($1, $2, $3, NULL, NULL, $4, $5) ON CONFLICT (mint_address) DO NOTHING',
-            [mint, name || null, owner, 'CNSZ', isOg420]
+            [mint, name || null, owner, 'KBDS', isOg420]
           );
           continue;
         }

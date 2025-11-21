@@ -135,7 +135,7 @@ function UserMenu() {
       {open && (
         <div className="user-menu-dropdown">
           <div className="dropdown-item balance">
-            <span>$CSz420</span>
+            <span>$KBDS</span>
             <strong>{csBalance}</strong>
           </div>
           
@@ -193,7 +193,7 @@ function Home() {
   const heroEyebrow = `${projectName} Holder Portal [POWERED BY BUXDAO]`;
   const heroTitle = projectConfig.hero?.title || 'Verify, view your holdings and rewards';
   const heroCopy = projectConfig.hero?.lede || projectDescription || 'Holder verification, Discord roles, live sales bot, and rewards claims.';
-  const heroThumbnail = projectConfig.hero?.thumbnailUrl || 'https://img-cdn.magiceden.dev/rs:fill:400:0:0/plain/https%3A%2F%2Fcreator-hub-prod.s3.us-east-2.amazonaws.com%2Fcannasolz_pfp_1668579712636.png';
+  const heroThumbnail = projectConfig.hero?.thumbnailUrl || '';
   const isDiscordConnected = Boolean(discordUser);
   const walletLinked = Boolean(discordUser?.wallet_address || connected);
 
@@ -207,7 +207,7 @@ function Home() {
     <div className="app-shell">
       <header className="app-header">
         <div className="hero-media">
-          <img src={heroThumbnail} alt={`${projectName} thumbnail`} />
+          <img src={projectConfig.project?.logoPath || '/KBDS logo.jpg'} alt={`${projectName} logo`} />
         </div>
         <div className="hero-copy">
           <p className="eyebrow">

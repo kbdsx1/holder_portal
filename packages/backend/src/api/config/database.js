@@ -29,7 +29,7 @@ console.log('Initializing database connection pool...', {
 });
 
 // Create or reuse a singleton pool (prevents redeclaration in bundled serverless)
-let pool = globalThis.__CANNASOLZ_DB_POOL;
+let pool = globalThis.__KBDS_DB_POOL;
 if (!pool) {
   pool = new Pool({
   connectionString,
@@ -47,11 +47,11 @@ if (!pool) {
     idle_in_transaction_session_timeout: 10000,
     query_timeout: 10000
   });
-  globalThis.__CANNASOLZ_DB_POOL = pool;
+  globalThis.__KBDS_DB_POOL = pool;
 }
 
 // Attach listeners only once
-if (!globalThis.__CANNASOLZ_DB_POOL_LISTENERS_ATTACHED) {
+if (!globalThis.__KBDS_DB_POOL_LISTENERS_ATTACHED) {
 // Add pool error handler with reconnection logic
 pool.on('error', (err, client) => {
   console.error('Unexpected error on idle client', err);
@@ -80,7 +80,7 @@ pool.on('connect', client => {
   // Add pool acquire/remove handlers
   pool.on('acquire', () => console.log('Client acquired from pool'));
   pool.on('remove', () => console.log('Client removed from pool'));
-  globalThis.__CANNASOLZ_DB_POOL_LISTENERS_ATTACHED = true;
+  globalThis.__KBDS_DB_POOL_LISTENERS_ATTACHED = true;
 }
 
 // Health check function

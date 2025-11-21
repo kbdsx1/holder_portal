@@ -5,7 +5,7 @@
   display: flex;
   flex-direction: column;
   gap: 2.5rem;
-  color: #e6f2e6;
+  color: #ffffff;
 }
 
 .app-header {
@@ -34,7 +34,10 @@
 .app-header h1 {
   font-size: clamp(2.2rem, 5vw, 3.8rem);
   margin-bottom: 0.5rem;
-  color: var(--brand-accent, #95D5B2);
+  color: var(--brand-accent, #FFD700);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 .hero-lede-row {
@@ -46,7 +49,7 @@
 
 .app-header .lede {
   max-width: 52ch;
-  color: rgba(230, 242, 230, 0.85);
+  color: rgba(255, 255, 255, 0.85);
   margin: 0;
 }
 
@@ -54,8 +57,9 @@
   letter-spacing: 0.2em;
   text-transform: uppercase;
   font-size: 0.8rem;
-  color: var(--brand-accent, #95D5B2);
+  color: var(--brand-accent, #FFD700);
   margin-bottom: 0.5rem;
+  font-weight: 600;
 }
 
 .primary-cta {
@@ -66,9 +70,10 @@
   border: 2px solid #ffffff;
   cursor: pointer;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
-  background: var(--brand-accent, #95D5B2);
-  color: #0b1a12;
-  box-shadow: 0 10px 30px rgba(149, 213, 178, 0.3);
+  background: var(--brand-accent, #FFD700);
+  color: #000000;
+  box-shadow: 0 10px 30px rgba(255, 215, 0, 0.4);
+  font-weight: 700;
 }
 
 .primary-cta:hover {
@@ -132,17 +137,6 @@
   box-shadow: 0 12px 28px rgba(0, 0, 0, 0.4);
 }
 
-.social-link.mint-link {
-  background: #FF6B6B;
-  border-color: #ffffff;
-  color: #ffffff;
-  box-shadow: 0 8px 20px rgba(255, 107, 107, 0.3);
-  font-weight: 700;
-}
-
-.social-link.mint-link:hover {
-  box-shadow: 0 12px 28px rgba(255, 107, 107, 0.4);
-}
 
 .social-icon {
   width: 18px;
@@ -161,11 +155,11 @@
 }
 
 .panel {
-  background: color-mix(in srgb, var(--brand-primary, #1B4332) 85%, #000000 15%);
-  border: 1px solid color-mix(in srgb, var(--brand-accent, #95D5B2) 20%, transparent);
+  background: color-mix(in srgb, var(--brand-primary, #000000) 85%, #1a1a1a 15%);
+  border: 1px solid color-mix(in srgb, var(--brand-accent, #FFD700) 30%, transparent);
   border-radius: 24px;
   padding: clamp(1rem, 3vw, 1.5rem);
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 215, 0, 0.1);
 }
 
 .modal-overlay {
@@ -180,11 +174,12 @@
 }
 
 .modal-panel {
-  background: #081c15;
+  background: #0a0a0a;
+  border: 1px solid rgba(255, 215, 0, 0.2);
   border-radius: 24px;
   padding: 0;
   width: min(540px, 100%);
-  box-shadow: 0 30px 70px rgba(0, 0, 0, 0.45);
+  box-shadow: 0 30px 70px rgba(0, 0, 0, 0.6), 0 0 40px rgba(255, 215, 0, 0.1);
   max-height: 90vh;
   overflow: hidden;
 }
@@ -215,10 +210,10 @@
 
 .modal-card {
   position: relative;
-  background: #0d241b;
+  background: #1a1a1a;
   border-radius: 18px;
   padding: 1.5rem;
-  box-shadow: inset 0 0 0 1px rgba(149, 213, 178, 0.1);
+  box-shadow: inset 0 0 0 1px rgba(255, 215, 0, 0.15);
 }
 
 .verification-modal-content .modal-card h2 {
@@ -235,7 +230,7 @@
   align-items: center;
   gap: 0.6rem;
   border-radius: 999px;
-  border: 1px solid rgba(230, 242, 230, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.2);
   padding: 0.35rem 0.9rem 0.35rem 0.35rem;
   background: rgba(0, 0, 0, 0.25);
   color: #fff;
@@ -277,10 +272,10 @@
   position: absolute;
   right: 0;
   margin-top: 0.5rem;
-  background: #0f241b;
+  background: #1a1a1a;
   border-radius: 16px;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.45);
-  border: 1px solid rgba(149, 213, 178, 0.2);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+  border: 1px solid rgba(255, 215, 0, 0.3);
   min-width: 220px;
   padding: 0.75rem;
   z-index: 5;
@@ -293,7 +288,7 @@
   align-items: center;
   padding: 0.65rem 0.5rem;
   border-radius: 12px;
-  color: #e6f2e6;
+  color: #ffffff;
   font-size: 0.95rem;
 }
 
@@ -318,14 +313,14 @@
 .dropdown-section {
   margin: 0.5rem 0;
   padding-top: 0.5rem;
-  border-top: 1px solid rgba(149, 213, 178, 0.1);
+  border-top: 1px solid rgba(255, 215, 0, 0.2);
 }
 
 .dropdown-section-header {
   font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: rgba(230, 242, 230, 0.6);
+  color: rgba(255, 255, 255, 0.6);
   padding: 0.5rem 0.5rem 0.25rem;
   font-weight: 600;
 }
@@ -339,21 +334,21 @@
 
 .dropdown-item.add-wallet {
   background: rgba(149, 213, 178, 0.1);
-  border: 1px solid rgba(149, 213, 178, 0.2);
+  border: 1px solid rgba(255, 215, 0, 0.3);
   cursor: pointer;
   margin-top: 0.5rem;
   font-weight: 600;
-  color: var(--brand-accent, #95D5B2);
+  color: var(--brand-accent, #FFD700);
   transition: background 0.2s ease;
 }
 
 .dropdown-item.add-wallet:hover {
-  background: rgba(149, 213, 178, 0.15);
+  background: rgba(255, 215, 0, 0.2);
 }
 
 .dropdown-divider {
   height: 1px;
-  background: rgba(149, 213, 178, 0.1);
+  background: rgba(255, 215, 0, 0.2);
   margin: 0.5rem 0;
 }
 
@@ -423,7 +418,7 @@
   }
 
   /* Ensure the title fits on one line on mobile */
-  .my-cannasolz-title {
+  .my-kbds-title {
     font-size: clamp(0.9rem, 4vw, 1.1rem) !important;
     line-height: 1.1;
     white-space: nowrap;
@@ -452,7 +447,7 @@
     max-width: 100%;
   }
 
-  /* Override text-6xl for My CannaSolz heading on mobile */
+  /* Override text-6xl for My KBDS heading on mobile */
   h2.text-6xl,
   .container-panel h2.text-6xl,
   .userprofile-wrap ~ h2.text-6xl,

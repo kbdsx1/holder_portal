@@ -156,7 +156,7 @@ export default async function handler(req, res) {
       
       return res.json({
         collection: {
-          name: 'CannaSolz',
+          name: 'Knuckle Bunny Death Squad',
           count: counts.total_count || 0,
           daily_yield: totalDailyYield // Total includes both NFTs and cNFTs for overall calculation
         },

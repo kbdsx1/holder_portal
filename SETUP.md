@@ -1,4 +1,4 @@
-# CannaSolz White-Label Setup
+# Knuckle Bunny Death Squad (KBDS) Holder Portal Setup
 
 This repo packages backend APIs, a starter React UI, and monitoring/cron scripts so other projects can ship holder verification + Discord automation quickly.
 

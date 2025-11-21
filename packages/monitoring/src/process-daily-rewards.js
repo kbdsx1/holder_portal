@@ -97,7 +97,7 @@ async function processDailyRewards() {
     const statsData = stats.rows[0];
     console.log('\n=== DAILY REWARDS PROCESSING COMPLETE ===');
     console.log(`Processed Count: ${statsData.processed_count}`);
-    console.log(`Total Rewards Distributed: ${statsData.total_rewards} $CSz420`);
+    console.log(`Total Rewards Distributed: ${statsData.total_rewards} $KBDS`);
     console.log(`Timestamp: ${new Date().toISOString()}`);
     console.log('==========================================\n');
 

@@ -4,9 +4,9 @@ export function applyBranding(project) {
   }
 
   const root = document.documentElement;
-  const primary = project.project.primaryColor || '#1B4332';
-  const accent = project.project.accentColor || '#95D5B2';
-  const background = project.project.backgroundColor || '#081c15';
+  const primary = project.project.primaryColor || '#000000';
+  const accent = project.project.accentColor || '#FFD700';
+  const background = project.project.backgroundColor || '#0a0a0a';
 
   root.style.setProperty('--brand-primary', primary);
   root.style.setProperty('--brand-accent', accent);

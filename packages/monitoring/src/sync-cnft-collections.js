@@ -633,7 +633,7 @@ export default async function syncAllCnftCollections() {
   
   try {
     console.log(`\n${'='.repeat(60)}`);
-    console.log(`🌱 CannaSolz cNFT Collection Sync (Incremental)`);
+    console.log(`🌱 KBDS cNFT Collection Sync (Incremental)`);
     console.log(`${'='.repeat(60)}\n`);
     
     // Sync each collection

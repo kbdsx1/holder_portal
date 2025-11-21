@@ -31,7 +31,7 @@ export default async function handler(req, res) {
         [discordUser.discord_id]
       );
       if (Number(counts.rows[0]?.total_count || 0) > 0) {
-        return res.json({ roles: [{ id: 'holder-local', name: 'Holder', type: 'holder', color: '#22c55e', collection: 'cannasolz', display_name: 'CannaSolz Holder' }] });
+        return res.json({ roles: [{ id: 'holder-local', name: 'Holder', type: 'holder', color: '#22c55e', collection: 'kbds', display_name: 'KBDS Holder' }] });
       }
       return res.json({ roles: [] });
     }
@@ -44,7 +44,7 @@ export default async function handler(req, res) {
 
     // Helper to check eligibility based on flags/thresholds
     const isEligible = (role) => {
-      // First check if role exists in the roles JSONB array (for CNSZ holder roles and others)
+      // First check if role exists in the roles JSONB array (for KBDS holder roles and others)
       if (userRoles.roles && Array.isArray(userRoles.roles)) {
         const roleIdStr = String(role.discord_role_id);
         const hasRoleInJsonb = userRoles.roles.some(r => {
@@ -133,7 +133,7 @@ export default async function handler(req, res) {
         case 'token': {
           // Token roles are also stored in the roles JSONB array
           // The JSONB check at the top should handle them, but we also check boolean flags for backwards compatibility
-          if (role.collection === 'bux' || role.collection === 'CNSZ') {
+          if (role.collection === 'bux' || role.collection === 'KBDS') {
             switch (role.name) {
               case 'BUX Beginner':
                 return !!userRoles.bux_beginner;
@@ -197,7 +197,7 @@ export default async function handler(req, res) {
       [discordUser.discord_id]
     );
     if (Number(counts.rows[0]?.total_count || 0) > 0) {
-      return res.json({ roles: [{ id: 'holder-local', name: 'Holder', type: 'holder', color: '#22c55e', collection: 'cannasolz', display_name: 'CannaSolz Holder' }] });
+      return res.json({ roles: [{ id: 'holder-local', name: 'Holder', type: 'holder', color: '#22c55e', collection: 'kbds', display_name: 'KBDS Holder' }] });
     }
     return res.json({ roles: [] });
 

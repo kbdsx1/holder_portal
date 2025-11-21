@@ -22,8 +22,8 @@ const InteractionResponseType = {
 };
 
 const MAGIC_EDEN_API_BASE = 'https://api-mainnet.magiceden.io/v2';
-const MAGIC_EDEN_SYMBOL = 'cannasolz'; // Magic Eden API uses lowercase
-const DB_COLLECTION_SYMBOL = 'CNSZ'; // Database uses uppercase symbol
+const MAGIC_EDEN_SYMBOL = 'kbds'; // Magic Eden API uses lowercase
+const DB_COLLECTION_SYMBOL = 'KBDS'; // Database uses uppercase symbol
 
 // Convert lamports to SOL
 function lamportsToSol(lamports) {
@@ -94,8 +94,8 @@ function getUserAvatarUrl(user) {
   }
 }
 
-// Handle /mycsz420 command
-export async function handleMyCSz420Command(interaction) {
+// Handle /mykbds command
+export async function handleMyKBDSCommand(interaction) {
   let client;
   try {
     // Get command issuer
@@ -207,13 +207,13 @@ export async function handleMyCSz420Command(interaction) {
         type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
         data: {
           embeds: [{
-            title: `💰 CSz420 Token - ${username}`,
+            title: `💰 KBDS Token - ${username}`,
             description: 'No token data found.',
             color: 0xFFA500,
             thumbnail: avatarUrl ? { url: avatarUrl } : undefined,
             footer: {
-              text: 'CannaSolz',
-              icon_url: 'https://cannasolz.vercel.app/favicon.jpeg'
+              text: 'Knuckle Bunny Death Squad',
+              icon_url: ''
             },
             timestamp: new Date().toISOString()
           }],
@@ -236,17 +236,17 @@ export async function handleMyCSz420Command(interaction) {
     const fields = [
       {
         name: 'Daily Yield',
-        value: `${dailyYield} $CSz420`,
+        value: `${dailyYield} $KBDS`,
         inline: true
       },
       {
         name: 'Unclaimed',
-        value: `${unclaimedBalance} $CSz420`,
+        value: `${unclaimedBalance} $KBDS`,
         inline: true
       },
       {
         name: 'Balance',
-        value: `${formattedActualBalance} $CSz420`,
+        value: `${formattedActualBalance} $KBDS`,
         inline: true
       }
     ];
@@ -255,13 +255,13 @@ export async function handleMyCSz420Command(interaction) {
       type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
       data: {
         embeds: [{
-          title: `💰 CSz420 Token - ${username}`,
+          title: `💰 KBDS Token - ${username}`,
           color: 0x95D5B2, // Green color matching brand
           thumbnail: avatarUrl ? { url: avatarUrl } : undefined,
           fields: fields,
           footer: {
-            text: 'CannaSolz',
-            icon_url: 'https://cannasolz.vercel.app/favicon.jpeg'
+            text: 'Knuckle Bunny Death Squad',
+            icon_url: ''
           },
           timestamp: new Date().toISOString()
         }],
@@ -269,7 +269,7 @@ export async function handleMyCSz420Command(interaction) {
       }
     };
   } catch (error) {
-    console.error('Error handling mycsz420 command:', error);
+    console.error('Error handling mykbds command:', error);
     return {
       type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
       data: {
@@ -398,8 +398,8 @@ export async function handleMyNFTsCommand(interaction) {
             color: 0xFFA500,
             thumbnail: avatarUrl ? { url: avatarUrl } : undefined,
             footer: {
-              text: 'CannaSolz',
-              icon_url: 'https://cannasolz.vercel.app/favicon.jpeg'
+              text: 'Knuckle Bunny Death Squad',
+              icon_url: ''
             },
             timestamp: new Date().toISOString()
           }],
@@ -470,8 +470,8 @@ export async function handleMyNFTsCommand(interaction) {
           thumbnail: avatarUrl ? { url: avatarUrl } : undefined,
           fields: fields.length > 0 ? fields : [{ name: 'Total', value: grandTotal.toString(), inline: false }],
           footer: {
-            text: 'CannaSolz',
-            icon_url: 'https://cannasolz.vercel.app/favicon.jpeg'
+            text: 'Knuckle Bunny Death Squad',
+            icon_url: ''
           },
           timestamp: new Date().toISOString()
         }],
@@ -514,12 +514,12 @@ export async function handleCollectionCommand() {
     
     // Get base URL for favicon from runtime config
     const runtime = getRuntimeConfig();
-    const baseUrl = runtime.frontendUrl || 'https://cannasolz.vercel.app';
+    const baseUrl = runtime.frontendUrl || '';
     const faviconUrl = `${baseUrl}/favicon.jpeg`;
     
     const embed = {
-      title: `📊 ${data.name || 'CannaSolz'} Collection Stats`,
-      description: data.description || 'CannaSolz NFT Collection',
+      title: `📊 ${data.name || 'Knuckle Bunny Death Squad'} Collection Stats`,
+      description: data.description || 'Knuckle Bunny Death Squad NFT Collection',
       color: 0x95D5B2, // Green color matching brand
       thumbnail: {
         url: faviconUrl
@@ -571,14 +571,14 @@ export async function handleCollectionCommand() {
 // Handle /help command
 export async function handleHelpCommand() {
   const runtime = getRuntimeConfig();
-  const baseUrl = runtime.frontendUrl || 'https://cannasolz.vercel.app';
+  const baseUrl = runtime.frontendUrl || '';
   const faviconUrl = `${baseUrl}/favicon.jpeg`;
   
   return {
     type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
     data: {
       embeds: [{
-        title: 'CannaSolz Bot Commands',
+        title: 'KBDS Bot Commands',
         description: 'Here are all available commands:',
         color: 0x95D5B2,
         thumbnail: {
@@ -587,22 +587,22 @@ export async function handleHelpCommand() {
         fields: [
           {
             name: '📊 /collection',
-            value: 'Display CannaSolz collection statistics from Magic Eden',
+            value: 'Display Knuckle Bunny Death Squad collection statistics from Magic Eden',
             inline: false
           },
           {
             name: '📦 /mynfts',
-            value: 'View your CannaSolz NFT holdings',
+            value: 'View your KBDS NFT holdings',
             inline: false
           },
           {
-            name: '💰 /mycsz420',
-            value: 'View your CSz420 token balance, daily yield, and unclaimed rewards',
+            name: '💰 /mykbds',
+            value: 'View your KBDS token balance, daily yield, and unclaimed rewards',
             inline: false
           }
         ],
         footer: {
-          text: 'CannaSolz',
+          text: 'Knuckle Bunny Death Squad',
           icon_url: faviconUrl
         },
         timestamp: new Date().toISOString()
@@ -727,18 +727,18 @@ export async function handlePayCommand(interaction) {
           fields: [
             {
               name: `${username} Credited`,
-              value: `${formatTokenAmount(amount)} $CSz420`,
+              value: `${formatTokenAmount(amount)} $KBDS`,
               inline: false
             },
             {
               name: 'New Balance',
-              value: `${formatTokenAmount(newBalance)} $CSz420`,
+              value: `${formatTokenAmount(newBalance)} $KBDS`,
               inline: false
             }
           ],
           footer: {
-            text: 'CannaSolz',
-            icon_url: 'https://cannasolz.vercel.app/favicon.jpeg'
+            text: 'Knuckle Bunny Death Squad',
+            icon_url: ''
           },
           timestamp: new Date().toISOString()
         }],
@@ -777,8 +777,8 @@ export async function handleCommand(interaction) {
       return await handleCollectionCommand();
     case 'mynfts':
       return await handleMyNFTsCommand(interaction);
-    case 'mycsz420':
-      return await handleMyCSz420Command(interaction);
+    case 'mykbds':
+      return await handleMyKBDSCommand(interaction);
     case 'help':
       return await handleHelpCommand();
     case 'pay':
