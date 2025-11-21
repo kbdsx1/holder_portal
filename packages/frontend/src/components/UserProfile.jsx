@@ -488,8 +488,7 @@ const UserProfile = () => {
                         { key: 'pinups_neon_row', label: 'Neon Row', count: counts.pinups_neon_row || 0, yield: dailyYields.pinups_neon_row || 0 },
                         { key: 'pinups_city_gardens', label: 'City Gardens', count: counts.pinups_city_gardens || 0, yield: dailyYields.pinups_city_gardens || 0 },
                         { key: 'pinups_stream_town', label: 'Stream Town', count: counts.pinups_stream_town || 0, yield: dailyYields.pinups_stream_town || 0 },
-                        { key: 'pinups_jabberjaw', label: 'Jabberjaw', count: counts.pinups_jabberjaw || 0, yield: dailyYields.pinups_jabberjaw || 0 },
-                        { key: 'pinups_none', label: 'None', count: counts.pinups_none || 0, yield: dailyYields.pinups_none || 0 }
+                        { key: 'pinups_jabberjaw', label: 'Jabberjaw', count: counts.pinups_jabberjaw || 0, yield: dailyYields.pinups_jabberjaw || 0 }
                       ];
                       
                       const otherRows = [
