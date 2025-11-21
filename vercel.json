@@ -2,11 +2,6 @@
   "installCommand": "npm ci",
   "buildCommand": "npm run build",
   "outputDirectory": "packages/frontend/dist",
-  "functions": {
-    "api/**/*.mjs": {
-      "runtime": "@vercel/node"
-    }
-  },
   "routes": [
     { "src": "/favicon.ico", "dest": "/favicon.jpg" },
     { "src": "/favicon.png", "dest": "/favicon.jpg" },
