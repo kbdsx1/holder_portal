@@ -25,7 +25,7 @@ const UserProfile = () => {
   const [claimAmount, setClaimAmount] = useState('');
   const [timeUntilUpdate, setTimeUntilUpdate] = useState(0);
   const [isClaimLoading, setIsClaimLoading] = useState(false);
-  const [showCnfts, setShowCnfts] = useState(false); // Toggle between NFTs and cNFTs
+  const [activeTab, setActiveTab] = useState('ogs'); // Tabs: 'ogs', 'yotr', 'others'
 
   // Format time remaining
   const formatTimeRemaining = (milliseconds) => {
@@ -339,36 +339,52 @@ const UserProfile = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* NFT Holdings */}
           <div className="tile bg-gradient-to-br from-gray-900/90 to-gray-800/90 rounded-lg p-6 shadow-lg backdrop-blur-sm border border-fuchsia-500/20">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-semibold text-white flex items-center gap-2">
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 7a2 2 0 012-2h14a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2V7zm4 1.5l3 3 2-2 4 4 2-2.5" />
-              </svg>
-                My {showCnfts ? 'cNFTs' : 'NFTs'}
-            </h3>
-              {/* Toggle Switch */}
-              <div className="flex items-center gap-2">
-                <span className={`text-sm ${!showCnfts ? 'text-white' : 'text-gray-500'}`}>NFTs</span>
+            <div className="mb-4">
+              <h3 className="text-xl font-semibold text-white flex items-center gap-2 mb-4">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 7a2 2 0 012-2h14a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2V7zm4 1.5l3 3 2-2 4 4 2-2.5" />
+                </svg>
+                My NFTs
+              </h3>
+              {/* Tabs */}
+              <div className="flex gap-2 border-b border-fuchsia-500/30">
                 <button
-                  onClick={() => setShowCnfts(!showCnfts)}
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                    showCnfts ? 'bg-purple-600' : 'bg-gray-600'
+                  onClick={() => setActiveTab('ogs')}
+                  className={`px-4 py-2 font-semibold transition-colors ${
+                    activeTab === 'ogs'
+                      ? 'text-fuchsia-300 border-b-2 border-fuchsia-500'
+                      : 'text-gray-400 hover:text-white'
                   }`}
                 >
-                  <span
-                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                      showCnfts ? 'translate-x-6' : 'translate-x-1'
-                    }`}
-                  />
+                  OGs
                 </button>
-                <span className={`text-sm ${showCnfts ? 'text-white' : 'text-gray-500'}`}>cNFTs</span>
+                <button
+                  onClick={() => setActiveTab('yotr')}
+                  className={`px-4 py-2 font-semibold transition-colors ${
+                    activeTab === 'yotr'
+                      ? 'text-fuchsia-300 border-b-2 border-fuchsia-500'
+                      : 'text-gray-400 hover:text-white'
+                  }`}
+                >
+                  YOTR
+                </button>
+                <button
+                  onClick={() => setActiveTab('others')}
+                  className={`px-4 py-2 font-semibold transition-colors ${
+                    activeTab === 'others'
+                      ? 'text-fuchsia-300 border-b-2 border-fuchsia-500'
+                      : 'text-gray-400 hover:text-white'
+                  }`}
+                >
+                  Others
+                </button>
               </div>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-left">
                 <thead>
                   <tr className="border-b border-fuchsia-500/30">
-                    <th className="py-2 text-fuchsia-300">Colour</th>
+                    <th className="py-2 text-fuchsia-300">Collection</th>
                     <th className="py-2 text-fuchsia-300 text-center">Count</th>
                     <th className="py-2 text-fuchsia-300 text-center">
                       <div>Daily Yield</div>
@@ -378,21 +394,24 @@ const UserProfile = () => {
                 </thead>
                 <tbody>
                   {(() => {
-                    if (showCnfts) {
-                      // Display cNFTs
-                      const cnftCounts = userData.cnftCounts || {};
-                      const cnftDailyYields = userData.cnftDailyYields || {};
-                      
+                    const counts = userData.counts || {};
+                    const dailyYields = userData.dailyYields || {};
+                    
+                    if (activeTab === 'ogs') {
+                      // OGs table
                       const rows = [
-                        { key: 'gold', label: 'Gold', count: cnftCounts.gold || 0, yield: cnftDailyYields.gold || 0 },
-                        { key: 'silver', label: 'Silver', count: cnftCounts.silver || 0, yield: cnftDailyYields.silver || 0 },
-                        { key: 'purple', label: 'Purple', count: cnftCounts.purple || 0, yield: cnftDailyYields.purple || 0 },
-                        { key: 'dark_green', label: 'Dark green', count: cnftCounts.dark_green || 0, yield: cnftDailyYields.dark_green || 0 },
-                        { key: 'light_green', label: 'Light green', count: cnftCounts.light_green || 0, yield: cnftDailyYields.light_green || 0 }
+                        { key: 'underground', label: 'Underground', count: counts.underground || 0, yield: dailyYields.underground || 0 },
+                        { key: 'outer', label: 'Outer', count: counts.outer || 0, yield: dailyYields.outer || 0 },
+                        { key: 'motor_city', label: 'Motor City', count: counts.motor_city || 0, yield: dailyYields.motor_city || 0 },
+                        { key: 'neon_row', label: 'Neon Row', count: counts.neon_row || 0, yield: dailyYields.neon_row || 0 },
+                        { key: 'city_gardens', label: 'City Gardens', count: counts.city_gardens || 0, yield: dailyYields.city_gardens || 0 },
+                        { key: 'stream_town', label: 'Stream Town', count: counts.stream_town || 0, yield: dailyYields.stream_town || 0 },
+                        { key: 'jabberjaw', label: 'Jabberjaw', count: counts.jabberjaw || 0, yield: dailyYields.jabberjaw || 0 },
+                        { key: 'none', label: 'None', count: counts.none || 0, yield: dailyYields.none || 0 }
                       ];
                       
-                      const totalCount = cnftCounts.total || rows.reduce((sum, row) => sum + row.count, 0);
-                      const totalYield = cnftDailyYields.total || rows.reduce((sum, row) => sum + row.yield, 0);
+                      const totalCount = rows.reduce((sum, row) => sum + row.count, 0);
+                      const totalYield = rows.reduce((sum, row) => sum + (row.yield || 0), 0);
                       
                       return (
                         <>
@@ -406,49 +425,76 @@ const UserProfile = () => {
                             </tr>
                           ))}
                           <tr className="border-t border-fuchsia-500/30">
-                            <td className="py-3 font-semibold">Total</td>
+                            <td className="py-3 font-semibold">TOTAL</td>
+                            <td className="py-3 text-center font-semibold">{totalCount}</td>
+                            <td className="py-3 text-center font-semibold">{Number(totalYield).toFixed(2)}</td>
+                          </tr>
+                        </>
+                      );
+                    } else if (activeTab === 'yotr') {
+                      // YOTR table
+                      const rows = [
+                        { key: 'underground', label: 'Underground', count: counts.underground || 0, yield: dailyYields.underground || 0 },
+                        { key: 'outer', label: 'Outer', count: counts.outer || 0, yield: dailyYields.outer || 0 },
+                        { key: 'motor_city', label: 'Motor City', count: counts.motor_city || 0, yield: dailyYields.motor_city || 0 },
+                        { key: 'neon_row', label: 'Neon Row', count: counts.neon_row || 0, yield: dailyYields.neon_row || 0 },
+                        { key: 'city_gardens', label: 'City Gardens', count: counts.city_gardens || 0, yield: dailyYields.city_gardens || 0 },
+                        { key: 'stream_town', label: 'Stream Town', count: counts.stream_town || 0, yield: dailyYields.stream_town || 0 },
+                        { key: 'jabberjaw', label: 'Jabberjaw', count: counts.jabberjaw || 0, yield: dailyYields.jabberjaw || 0 },
+                        { key: 'nomad', label: 'Nomad', count: counts.nomad || 0, yield: dailyYields.nomad || 0 }
+                      ];
+                      
+                      const totalCount = rows.reduce((sum, row) => sum + row.count, 0);
+                      const totalYield = rows.reduce((sum, row) => sum + (row.yield || 0), 0);
+                      
+                      return (
+                        <>
+                          {rows.map((row) => (
+                            <tr key={row.key}>
+                              <td className="py-3">{row.label}</td>
+                              <td className="py-3 text-center">{row.count}</td>
+                              <td className="py-3 text-center">
+                                {row.yield > 0 ? Number(row.yield).toFixed(2) : '—'}
+                              </td>
+                            </tr>
+                          ))}
+                          <tr className="border-t border-fuchsia-500/30">
+                            <td className="py-3 font-semibold">TOTAL</td>
                             <td className="py-3 text-center font-semibold">{totalCount}</td>
                             <td className="py-3 text-center font-semibold">{Number(totalYield).toFixed(2)}</td>
                           </tr>
                         </>
                       );
                     } else {
-                      // Display regular NFTs
-                    const counts = userData.counts || {};
-                    const dailyYields = userData.dailyYields || {};
-                    
-                    // Define row order with OG420 first
-                    const rows = [
-                      { key: 'og420', label: 'OG420', count: counts.og420 || 0, yield: dailyYields.og420 || 0 },
-                      { key: 'gold', label: 'Gold', count: counts.gold || 0, yield: dailyYields.gold || 0 },
-                      { key: 'silver', label: 'Silver', count: counts.silver || 0, yield: dailyYields.silver || 0 },
-                      { key: 'purple', label: 'Purple', count: counts.purple || 0, yield: dailyYields.purple || 0 },
-                      { key: 'dark_green', label: 'Dark green', count: counts.dark_green || 0, yield: dailyYields.dark_green || 0 },
-                      { key: 'light_green', label: 'Light green', count: counts.light_green || 0, yield: dailyYields.light_green || 0 }
-                    ];
-                    
-                    const totalCount = counts.total || rows.reduce((sum, row) => sum + row.count, 0);
-                    // Calculate NFT-only total yield (exclude cNFTs)
-                    const totalYield = rows.reduce((sum, row) => sum + (row.yield || 0), 0);
-                    
-                    return (
-                      <>
-                        {rows.map((row) => (
-                          <tr key={row.key}>
-                            <td className="py-3">{row.label}</td>
-                            <td className="py-3 text-center">{row.count}</td>
-                            <td className="py-3 text-center">
-                              {row.yield > 0 ? Number(row.yield).toFixed(2) : '—'}
-                            </td>
+                      // Others table
+                      const rows = [
+                        { key: 'art', label: 'Art', count: counts.art || 0, yield: dailyYields.art || 0 },
+                        { key: 'pinups', label: 'Pinups', count: counts.pinups || 0, yield: dailyYields.pinups || 0 },
+                        { key: 'rmx', label: 'RMX', count: counts.rmx || 0, yield: dailyYields.rmx || 0 },
+                        { key: 'grim_sweepers', label: 'Grim Sweepers', count: counts.grim_sweepers || 0, yield: dailyYields.grim_sweepers || 0 }
+                      ];
+                      
+                      const totalCount = rows.reduce((sum, row) => sum + row.count, 0);
+                      const totalYield = rows.reduce((sum, row) => sum + (row.yield || 0), 0);
+                      
+                      return (
+                        <>
+                          {rows.map((row) => (
+                            <tr key={row.key}>
+                              <td className="py-3">{row.label}</td>
+                              <td className="py-3 text-center">{row.count}</td>
+                              <td className="py-3 text-center">
+                                {row.yield > 0 ? Number(row.yield).toFixed(2) : '—'}
+                              </td>
+                            </tr>
+                          ))}
+                          <tr className="border-t border-fuchsia-500/30">
+                            <td className="py-3 font-semibold">TOTAL</td>
+                            <td className="py-3 text-center font-semibold">{totalCount}</td>
+                            <td className="py-3 text-center font-semibold">{Number(totalYield).toFixed(2)}</td>
                           </tr>
-                        ))}
-                        <tr className="border-t border-fuchsia-500/30">
-                          <td className="py-3 font-semibold">Total</td>
-                          <td className="py-3 text-center font-semibold">{totalCount}</td>
-                          <td className="py-3 text-center font-semibold">{Number(totalYield).toFixed(2)}</td>
-                        </tr>
-                      </>
-                    );
+                        </>
+                      );
                     }
                   })()}
                 </tbody>
