@@ -492,8 +492,7 @@ const UserProfile = () => {
                       ];
                       
                       const otherRows = [
-                        { key: 'art', label: 'Art', count: counts.art || 0, yield: dailyYields.art || 0 },
-                        { key: 'grim_sweepers', label: 'Grim Sweepers', count: counts.grim_sweepers || 0, yield: dailyYields.grim_sweepers || 0 }
+                        { key: 'art', label: 'Art', count: counts.art || 0, yield: dailyYields.art || 0 }
                       ];
                       
                       const totalCount = pinupsCount + otherRows.reduce((sum, row) => sum + row.count, 0);
