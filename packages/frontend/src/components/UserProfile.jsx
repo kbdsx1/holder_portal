@@ -26,6 +26,7 @@ const UserProfile = () => {
   const [timeUntilUpdate, setTimeUntilUpdate] = useState(0);
   const [isClaimLoading, setIsClaimLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('ogs'); // Tabs: 'ogs', 'yotr', 'others'
+  const [isPinupsExpanded, setIsPinupsExpanded] = useState(false);
 
   // Format time remaining
   const formatTimeRemaining = (milliseconds) => {
@@ -349,7 +350,10 @@ const UserProfile = () => {
               {/* Tabs */}
               <div className="flex gap-2 border-b border-fuchsia-500/30">
                 <button
-                  onClick={() => setActiveTab('ogs')}
+                  onClick={() => {
+                    setActiveTab('ogs');
+                    setIsPinupsExpanded(false);
+                  }}
                   className={`px-4 py-2 font-semibold transition-colors ${
                     activeTab === 'ogs'
                       ? 'text-fuchsia-300 border-b-2 border-fuchsia-500'
@@ -359,7 +363,10 @@ const UserProfile = () => {
                   OGs
                 </button>
                 <button
-                  onClick={() => setActiveTab('yotr')}
+                  onClick={() => {
+                    setActiveTab('yotr');
+                    setIsPinupsExpanded(false);
+                  }}
                   className={`px-4 py-2 font-semibold transition-colors ${
                     activeTab === 'yotr'
                       ? 'text-fuchsia-300 border-b-2 border-fuchsia-500'
@@ -369,7 +376,10 @@ const UserProfile = () => {
                   YOTR
                 </button>
                 <button
-                  onClick={() => setActiveTab('others')}
+                  onClick={() => {
+                    setActiveTab('others');
+                    setIsPinupsExpanded(false);
+                  }}
                   className={`px-4 py-2 font-semibold transition-colors ${
                     activeTab === 'others'
                       ? 'text-fuchsia-300 border-b-2 border-fuchsia-500'
@@ -467,19 +477,34 @@ const UserProfile = () => {
                       );
                     } else {
                       // Others table
-                      const rows = [
+                      const pinupsCount = counts.pinups || 0;
+                      const pinupsYield = dailyYields.pinups || 0;
+                      
+                      // Pinups burrow counts
+                      const pinupsBurrows = [
+                        { key: 'pinups_underground', label: 'Underground', count: counts.pinups_underground || 0, yield: dailyYields.pinups_underground || 0 },
+                        { key: 'pinups_outer', label: 'Outer', count: counts.pinups_outer || 0, yield: dailyYields.pinups_outer || 0 },
+                        { key: 'pinups_motor_city', label: 'Motor City', count: counts.pinups_motor_city || 0, yield: dailyYields.pinups_motor_city || 0 },
+                        { key: 'pinups_neon_row', label: 'Neon Row', count: counts.pinups_neon_row || 0, yield: dailyYields.pinups_neon_row || 0 },
+                        { key: 'pinups_city_gardens', label: 'City Gardens', count: counts.pinups_city_gardens || 0, yield: dailyYields.pinups_city_gardens || 0 },
+                        { key: 'pinups_stream_town', label: 'Stream Town', count: counts.pinups_stream_town || 0, yield: dailyYields.pinups_stream_town || 0 },
+                        { key: 'pinups_jabberjaw', label: 'Jabberjaw', count: counts.pinups_jabberjaw || 0, yield: dailyYields.pinups_jabberjaw || 0 },
+                        { key: 'pinups_none', label: 'None', count: counts.pinups_none || 0, yield: dailyYields.pinups_none || 0 }
+                      ];
+                      
+                      const otherRows = [
                         { key: 'art', label: 'Art', count: counts.art || 0, yield: dailyYields.art || 0 },
-                        { key: 'pinups', label: 'Pinups', count: counts.pinups || 0, yield: dailyYields.pinups || 0 },
                         { key: 'rmx', label: 'RMX', count: counts.rmx || 0, yield: dailyYields.rmx || 0 },
                         { key: 'grim_sweepers', label: 'Grim Sweepers', count: counts.grim_sweepers || 0, yield: dailyYields.grim_sweepers || 0 }
                       ];
                       
-                      const totalCount = rows.reduce((sum, row) => sum + row.count, 0);
-                      const totalYield = rows.reduce((sum, row) => sum + (row.yield || 0), 0);
+                      const totalCount = pinupsCount + otherRows.reduce((sum, row) => sum + row.count, 0);
+                      const totalYield = pinupsYield + otherRows.reduce((sum, row) => sum + (row.yield || 0), 0);
                       
                       return (
                         <>
-                          {rows.map((row) => (
+                          {/* Art */}
+                          {otherRows.filter(r => r.key === 'art').map((row) => (
                             <tr key={row.key}>
                               <td className="py-3">{row.label}</td>
                               <td className="py-3 text-center">{row.count}</td>
@@ -488,6 +513,53 @@ const UserProfile = () => {
                               </td>
                             </tr>
                           ))}
+                          
+                          {/* Pinups - Collapsible */}
+                          <tr 
+                            className="cursor-pointer hover:bg-gray-800/50 transition-colors"
+                            onClick={() => setIsPinupsExpanded(!isPinupsExpanded)}
+                          >
+                            <td className="py-3">
+                              <div className="flex items-center gap-2">
+                                <svg 
+                                  className={`w-4 h-4 transition-transform ${isPinupsExpanded ? 'rotate-90' : ''}`}
+                                  fill="none" 
+                                  stroke="currentColor" 
+                                  viewBox="0 0 24 24"
+                                >
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                </svg>
+                                <span>Pinups</span>
+                              </div>
+                            </td>
+                            <td className="py-3 text-center">{pinupsCount}</td>
+                            <td className="py-3 text-center">
+                              {pinupsYield > 0 ? Number(pinupsYield).toFixed(2) : '—'}
+                            </td>
+                          </tr>
+                          
+                          {/* Pinups Burrow Breakdown - Collapsed by default */}
+                          {isPinupsExpanded && pinupsBurrows.map((burrow) => (
+                            <tr key={burrow.key} className="bg-gray-800/30">
+                              <td className="py-2 pl-8 text-sm text-gray-300">{burrow.label}</td>
+                              <td className="py-2 text-center text-sm">{burrow.count}</td>
+                              <td className="py-2 text-center text-sm">
+                                {burrow.yield > 0 ? Number(burrow.yield).toFixed(2) : '—'}
+                              </td>
+                            </tr>
+                          ))}
+                          
+                          {/* RMX and Grim Sweepers */}
+                          {otherRows.filter(r => r.key !== 'art').map((row) => (
+                            <tr key={row.key}>
+                              <td className="py-3">{row.label}</td>
+                              <td className="py-3 text-center">{row.count}</td>
+                              <td className="py-3 text-center">
+                                {row.yield > 0 ? Number(row.yield).toFixed(2) : '—'}
+                              </td>
+                            </tr>
+                          ))}
+                          
                           <tr className="border-t border-fuchsia-500/30">
                             <td className="py-3 font-semibold">TOTAL</td>
                             <td className="py-3 text-center font-semibold">{totalCount}</td>
