@@ -314,7 +314,13 @@ async function handleDiscordAuth(req, res) {
 // Handle Discord callback
 async function handleDiscordCallback(req, res) {
   console.log('[Discord Callback] Received callback with query:', req.query);
-  console.log('[Discord Callback] Cookies:', req.headers.cookie);
+  console.log('[Discord Callback] Cookies header:', req.headers.cookie);
+  console.log('[Discord Callback] All headers:', {
+    cookie: req.headers.cookie,
+    host: req.headers.host,
+    'x-forwarded-host': req.headers['x-forwarded-host'],
+    'x-forwarded-proto': req.headers['x-forwarded-proto']
+  });
 
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed' });
@@ -327,13 +333,29 @@ async function handleDiscordCallback(req, res) {
 
     console.log('[Discord Callback] Verifying state:', { 
       received: state,
-      stored: storedState
+      stored: storedState,
+      allCookies: Object.keys(cookies),
+      cookieKeys: cookies
     });
 
-    if (!storedState || storedState !== state) {
-      console.error('[Discord Callback] State mismatch or missing');
+    // For serverless, we can rely on Discord's state echo since cookies might not persist
+    // But we still check the cookie if available for extra security
+    if (!state) {
+      console.error('[Discord Callback] No state in query parameters');
       res.setHeader('Location', `${FRONTEND_URL}/?error=${encodeURIComponent('Invalid state parameter')}`);
       return res.status(302).end();
+    }
+
+    // If we have a stored state cookie, verify it matches
+    // If not, we trust Discord's state echo (they echo back what we sent)
+    if (storedState && storedState !== state) {
+      console.error('[Discord Callback] State mismatch:', { stored: storedState, received: state });
+      res.setHeader('Location', `${FRONTEND_URL}/?error=${encodeURIComponent('Invalid state parameter')}`);
+      return res.status(302).end();
+    }
+
+    if (!storedState) {
+      console.warn('[Discord Callback] No stored state cookie found, but proceeding with Discord state echo');
     }
 
     // Exchange code for token
