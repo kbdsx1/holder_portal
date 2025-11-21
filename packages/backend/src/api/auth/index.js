@@ -340,6 +340,13 @@ async function handleDiscordCallback(req, res) {
     console.log('[Discord Callback] Exchanging code for token...');
     const callbackUrl = getCallbackUrl(req);
     console.log('[Discord Callback] Using callback URL:', callbackUrl);
+    console.log('[Discord Callback] Client ID:', DISCORD_CLIENT_ID);
+    console.log('[Discord Callback] Client Secret present:', !!DISCORD_CLIENT_SECRET);
+    console.log('[Discord Callback] Request headers:', {
+      host: req.headers.host,
+      'x-forwarded-host': req.headers['x-forwarded-host'],
+      'x-forwarded-proto': req.headers['x-forwarded-proto']
+    });
     
     const tokenParams = new URLSearchParams({
       client_id: DISCORD_CLIENT_ID,
@@ -349,7 +356,12 @@ async function handleDiscordCallback(req, res) {
       redirect_uri: callbackUrl
     });
     
-    console.log('[Discord Callback] Token request params:', tokenParams.toString());
+    console.log('[Discord Callback] Token request params (without secret):', {
+      client_id: DISCORD_CLIENT_ID,
+      grant_type: 'authorization_code',
+      code: code.substring(0, 10) + '...',
+      redirect_uri: callbackUrl
+    });
     
     const tokenResponse = await fetch('https://discord.com/api/oauth2/token', {
       method: 'POST',
