@@ -177,8 +177,8 @@ app.use((err, req, res, next) => {
 
 // Only start a listener when running locally (not in Vercel serverless)
 if (!process.env.VERCEL) {
-  app.listen(PORT, () => {
-    console.log(`Backend listening on port ${PORT}`);
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`Backend listening on port ${PORT} (all interfaces)`);
   });
 }
 

@@ -181,11 +181,7 @@ CREATE TABLE IF NOT EXISTS public.user_roles (
     discord_name text,
     last_updated timestamp without time zone,
     roles jsonb,
-    harvester_gold boolean DEFAULT false,
-    harvester_silver boolean DEFAULT false,
-    harvester_purple boolean DEFAULT false,
-    harvester_dark_green boolean DEFAULT false,
-    harvester_light_green boolean DEFAULT false
+    CONSTRAINT user_roles_discord_id_key UNIQUE (discord_id)
 );
 
 -- ============================================
@@ -249,21 +245,10 @@ BEGIN
     WHERE owner_discord_id = p_discord_id
        OR wallet_address IN (SELECT wallet_address FROM user_wallets WHERE discord_id = p_discord_id)
   ),
-  user_role_flags AS (
-    SELECT 
-      harvester_gold,
-      harvester_silver,
-      harvester_purple,
-      harvester_dark_green,
-      harvester_light_green
-    FROM user_roles
-    WHERE discord_id = p_discord_id
-  ),
   eligible AS (
     SELECT r.* FROM roles r
     LEFT JOIN counts c ON r.collection = 'KBDS'
     LEFT JOIN token_balance tb ON true
-    LEFT JOIN user_role_flags urf ON true
     WHERE r.collection = 'KBDS'
       AND (
         -- Holder roles based on collection_counts
@@ -283,19 +268,6 @@ BEGIN
          c.dark_green_count >= 1 AND c.light_green_count >= 1) OR
         -- LEVEL roles based on total_count (only highest one will be selected)
         (r.type = 'level' AND c.total_count >= COALESCE(r.threshold, 0))
-      )
-    UNION
-    -- HARVESTER roles based on harvester boolean flags
-    SELECT r.* FROM roles r
-    JOIN user_role_flags urf ON true
-    WHERE r.type = 'holder' 
-      AND r.collection LIKE 'seedling_%'
-      AND (
-        (r.collection = 'seedling_gold' AND urf.harvester_gold = TRUE) OR
-        (r.collection = 'seedling_silver' AND urf.harvester_silver = TRUE) OR
-        (r.collection = 'seedling_purple' AND urf.harvester_purple = TRUE) OR
-        (r.collection = 'seedling_dark_green' AND urf.harvester_dark_green = TRUE) OR
-        (r.collection = 'seedling_light_green' AND urf.harvester_light_green = TRUE)
       )
   ),
   -- Filter level roles to only include the highest one
@@ -343,7 +315,7 @@ BEGIN
   IF wallet_count = 1 THEN
     INSERT INTO user_roles (discord_id, discord_name)
     VALUES (NEW.discord_id, NEW.discord_name)
-    ON CONFLICT DO NOTHING;
+    ON CONFLICT (discord_id) DO UPDATE SET discord_name = EXCLUDED.discord_name;
 
     INSERT INTO claim_accounts (discord_id, unclaimed_amount, total_claimed, last_claim_time)
     VALUES (NEW.discord_id, 0, 0, CURRENT_TIMESTAMP)
@@ -356,13 +328,22 @@ BEGIN
 
   INSERT INTO collection_counts (
     discord_id, discord_name, total_count, last_updated,
-    gold_count, silver_count, purple_count, dark_green_count, light_green_count
+    underground_count, outer_count, motor_city_count, neon_row_count,
+    city_gardens_count, stream_town_count, jabberjaw_count, none_count, og_total_count,
+    yotr_underground_count, yotr_outer_count, yotr_motor_city_count, yotr_neon_row_count,
+    yotr_city_gardens_count, yotr_stream_town_count, yotr_jabberjaw_count, yotr_nomad_count, yotr_total_count,
+    art_count,
+    pinups_total_count, pinups_underground_count, pinups_outer_count, pinups_motor_city_count,
+    pinups_neon_row_count, pinups_city_gardens_count, pinups_stream_town_count, pinups_jabberjaw_count
   )
   VALUES (
     NEW.discord_id, NEW.discord_name, 0, CURRENT_TIMESTAMP,
-    0, 0, 0, 0, 0
+    0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0,
+    0, 0, 0, 0, 0, 0, 0, 0
   )
-  ON CONFLICT DO NOTHING;
+  ON CONFLICT (discord_id) DO NOTHING;
 
   RETURN NEW;
 END;
@@ -372,29 +353,6 @@ $$;
 CREATE OR REPLACE FUNCTION public.rebuild_roles_on_collection_counts_update()
 RETURNS TRIGGER AS $$
 BEGIN
-  -- Update harvester flags from collection_counts
-  INSERT INTO user_roles (
-    discord_id, 
-    harvester_gold, 
-    harvester_silver, 
-    harvester_purple, 
-    harvester_dark_green, 
-    harvester_light_green
-  )
-  SELECT 
-    NEW.discord_id,
-    (NEW.cnft_gold_count > 0) AS harvester_gold,
-    (NEW.cnft_silver_count > 0) AS harvester_silver,
-    (NEW.cnft_purple_count > 0) AS harvester_purple,
-    (NEW.cnft_dark_green_count > 0) AS harvester_dark_green,
-    (NEW.cnft_light_green_count > 0) AS harvester_light_green
-  ON CONFLICT (discord_id) DO UPDATE SET
-    harvester_gold = EXCLUDED.harvester_gold,
-    harvester_silver = EXCLUDED.harvester_silver,
-    harvester_purple = EXCLUDED.harvester_purple,
-    harvester_dark_green = EXCLUDED.harvester_dark_green,
-    harvester_light_green = EXCLUDED.harvester_light_green;
-
   -- Rebuild roles JSONB array
   PERFORM rebuild_user_roles(NEW.discord_id);
 

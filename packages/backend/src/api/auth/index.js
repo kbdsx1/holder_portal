@@ -22,6 +22,19 @@ function getOrigin(req) {
   const host = req.headers['x-forwarded-host'] || req.headers.host;
   return host ? `${proto}://${host}` : API_URL;
 }
+
+function getFrontendUrl(req) {
+  // In development, check if request is coming from localhost
+  if (process.env.NODE_ENV !== 'production') {
+    const origin = getOrigin(req);
+    // If request is from localhost, use localhost frontend
+    if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
+      return 'http://localhost:5173';
+    }
+  }
+  // Otherwise use runtime config
+  return FRONTEND_URL;
+}
 function getCallbackUrl(req) {
   const envOverride = process.env.DISCORD_REDIRECT_URI;
   if (envOverride) return envOverride;
@@ -55,12 +68,18 @@ async function syncDiscordDisplayName(discordUser) {
   const client = await dbPool.connect();
   try {
     await client.query('BEGIN');
-    await client.query(
-      `INSERT INTO user_roles (discord_id, discord_name)
-       VALUES ($1, $2)
-       ON CONFLICT (discord_id) DO UPDATE SET discord_name = EXCLUDED.discord_name`,
+    
+    // Update user_roles if exists, otherwise insert (without ON CONFLICT since no unique constraint)
+    const userRolesResult = await client.query(
+      'UPDATE user_roles SET discord_name = $2 WHERE discord_id = $1',
       [discordId, displayName]
     );
+    if (userRolesResult.rowCount === 0) {
+      await client.query(
+        'INSERT INTO user_roles (discord_id, discord_name) VALUES ($1, $2)',
+        [discordId, displayName]
+      );
+    }
 
     const updateStatements = [
       'UPDATE user_wallets SET discord_name = $2 WHERE discord_id = $1',
@@ -185,32 +204,41 @@ async function handleCheck(req, res) {
       await req.session.save();
     }
 
-    // Fetch wallet address from database
-    const client = await dbPool.connect();
+    // Fetch wallet address from database (with timeout handling)
+    let walletAddress = null;
     try {
-      const result = await client.query(
-        'SELECT wallet_address FROM user_wallets WHERE discord_id = $1 ORDER BY is_primary DESC, last_used DESC LIMIT 1',
-        [discordUser.discord_id]
-      );
-      
-      const walletAddress = result.rows[0]?.wallet_address;
-      
-      // Update session with wallet address
-      if (walletAddress && req.session.user) {
-        req.session.user.wallet_address = walletAddress;
-        await req.session.save();
+      const client = await dbPool.connect();
+      try {
+        const result = await client.query(
+          'SELECT wallet_address FROM user_wallets WHERE discord_id = $1 ORDER BY is_primary DESC, last_used DESC LIMIT 1',
+          [discordUser.discord_id]
+        );
+        walletAddress = result.rows[0]?.wallet_address;
+      } catch (dbError) {
+        console.error('[Auth Check] Database query error:', dbError.message);
+        // Continue without wallet address if DB query fails
+      } finally {
+        client.release();
       }
-
-      return res.status(200).json({ 
-        authenticated: true,
-        user: {
-          ...discordUser,
-          wallet_address: walletAddress
-        }
-      });
-    } finally {
-      client.release();
+    } catch (poolError) {
+      console.error('[Auth Check] Database connection error:', poolError.message);
+      // Continue without wallet address if connection fails
     }
+    
+    // Update session with wallet address if we got it
+    if (walletAddress && req.session.user) {
+      req.session.user.wallet_address = walletAddress;
+      await req.session.save();
+    }
+
+    // Return authenticated status even if wallet fetch failed
+    return res.status(200).json({ 
+      authenticated: true,
+      user: {
+        ...discordUser,
+        wallet_address: walletAddress
+      }
+    });
   } catch (error) {
     console.error('[Auth Check] Error:', error);
     return res.status(500).json({ error: 'Failed to check authentication status' });
@@ -288,8 +316,17 @@ async function handleDiscordAuth(req, res) {
     console.log('[Discord Auth] State cookie options:', stateCookieOptions, 'cookieDomainRuntime:', runtime.cookies.domain, 'origin:', getOrigin(req));
     const stateCookie = serialize('discord_state', state, stateCookieOptions);
     
-    // Force exact redirect URI to match Discord config
-    const exactRedirectUri = process.env.DISCORD_REDIRECT_URI || 'https://kbds-black.vercel.app/api/auth/discord/callback';
+    // Use environment variable or determine from NODE_ENV
+    // FORCE localhost in development - ignore DISCORD_REDIRECT_URI if set
+    let exactRedirectUri;
+    if (process.env.NODE_ENV === 'production') {
+      exactRedirectUri = process.env.DISCORD_REDIRECT_URI || 'https://kbds-black.vercel.app/api/auth/discord/callback';
+      console.log('[Discord Auth] Production mode - Using redirect URI:', exactRedirectUri);
+    } else {
+      // Development - ALWAYS use localhost
+      exactRedirectUri = 'http://localhost:3001/api/auth/discord/callback';
+      console.log('[Discord Auth] Development mode - FORCING localhost redirect URI:', exactRedirectUri);
+    }
     
     // Get fresh client ID from env
     const clientId = (process.env.DISCORD_CLIENT_ID || DISCORD_CLIENT_ID || '').trim();
@@ -312,7 +349,8 @@ async function handleDiscordAuth(req, res) {
     return res.status(302).end();
   } catch (error) {
     console.error('[Discord Auth] Error:', error);
-    res.setHeader('Location', `${FRONTEND_URL}/?error=${encodeURIComponent(error.message)}`);
+    const frontendUrl = getFrontendUrl(req);
+    res.setHeader('Location', `${frontendUrl}/?error=${encodeURIComponent(error.message)}`);
     return res.status(302).end();
   }
 }
@@ -332,6 +370,9 @@ async function handleDiscordCallback(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
+  // Get frontend URL once at the start of the function
+  const frontendUrl = getFrontendUrl(req);
+
   try {
     const { code, state } = req.query;
     const cookies = parse(req.headers.cookie || '');
@@ -346,9 +387,10 @@ async function handleDiscordCallback(req, res) {
 
     // For serverless, we can rely on Discord's state echo since cookies might not persist
     // But we still check the cookie if available for extra security
+    
     if (!state) {
       console.error('[Discord Callback] No state in query parameters');
-      res.setHeader('Location', `${FRONTEND_URL}/?error=${encodeURIComponent('Invalid state parameter')}`);
+      res.setHeader('Location', `${frontendUrl}/?error=${encodeURIComponent('Invalid state parameter')}`);
       return res.status(302).end();
     }
 
@@ -356,7 +398,7 @@ async function handleDiscordCallback(req, res) {
     // If not, we trust Discord's state echo (they echo back what we sent)
     if (storedState && storedState !== state) {
       console.error('[Discord Callback] State mismatch:', { stored: storedState, received: state });
-      res.setHeader('Location', `${FRONTEND_URL}/?error=${encodeURIComponent('Invalid state parameter')}`);
+      res.setHeader('Location', `${frontendUrl}/?error=${encodeURIComponent('Invalid state parameter')}`);
       return res.status(302).end();
     }
 
@@ -376,8 +418,17 @@ async function handleDiscordCallback(req, res) {
       'x-forwarded-proto': req.headers['x-forwarded-proto']
     });
     
-    // Force exact redirect URI to match Discord config
-    const exactRedirectUri = process.env.DISCORD_REDIRECT_URI || 'https://kbds-black.vercel.app/api/auth/discord/callback';
+    // Use environment variable or determine from NODE_ENV
+    // FORCE localhost in development - ignore DISCORD_REDIRECT_URI if set
+    let exactRedirectUri;
+    if (process.env.NODE_ENV === 'production') {
+      exactRedirectUri = process.env.DISCORD_REDIRECT_URI || 'https://kbds-black.vercel.app/api/auth/discord/callback';
+      console.log('[Discord Callback] Production mode - Using redirect URI:', exactRedirectUri);
+    } else {
+      // Development - ALWAYS use localhost
+      exactRedirectUri = 'http://localhost:3001/api/auth/discord/callback';
+      console.log('[Discord Callback] Development mode - FORCING localhost redirect URI:', exactRedirectUri);
+    }
     
     // Get fresh values from env (bypass runtime config)
     const clientId = (process.env.DISCORD_CLIENT_ID || DISCORD_CLIENT_ID || '').trim();
@@ -388,9 +439,9 @@ async function handleDiscordCallback(req, res) {
         hasClientId: !!clientId,
         hasClientSecret: !!clientSecret,
         envClientId: !!process.env.DISCORD_CLIENT_ID,
-        envClientSecret: !!process.env.DISCORD_CLIENT_SECRET
+        envSecret: !!process.env.DISCORD_CLIENT_SECRET
       });
-      res.setHeader('Location', `${FRONTEND_URL}/?error=${encodeURIComponent('Discord OAuth not configured')}`);
+      res.setHeader('Location', `${frontendUrl}/?error=${encodeURIComponent('Discord OAuth not configured')}`);
       return res.status(302).end();
     }
     
@@ -463,10 +514,10 @@ async function handleDiscordCallback(req, res) {
         console.error('[Discord Callback] Could not parse error response');
       }
     }
-
+    
     if (!tokenResponse.ok) {
       console.error('[Discord Callback] Token error:', tokenText);
-      res.setHeader('Location', `${FRONTEND_URL}/?error=${encodeURIComponent('Failed to get token: ' + tokenText)}`);
+      res.setHeader('Location', `${frontendUrl}/?error=${encodeURIComponent('Failed to get token: ' + tokenText)}`);
       return res.status(302).end();
     }
 
@@ -475,13 +526,13 @@ async function handleDiscordCallback(req, res) {
       tokenData = JSON.parse(tokenText);
     } catch (e) {
       console.error('[Discord Callback] Failed to parse token response:', e);
-      res.setHeader('Location', `${FRONTEND_URL}/?error=${encodeURIComponent('Invalid token response')}`);
+      res.setHeader('Location', `${frontendUrl}/?error=${encodeURIComponent('Invalid token response')}`);
       return res.status(302).end();
     }
 
     if (!tokenData.access_token) {
       console.error('[Discord Callback] No access token in response');
-      res.setHeader('Location', `${FRONTEND_URL}/?error=${encodeURIComponent('No access token received')}`);
+      res.setHeader('Location', `${frontendUrl}/?error=${encodeURIComponent('No access token received')}`);
       return res.status(302).end();
     }
 
@@ -503,7 +554,7 @@ async function handleDiscordCallback(req, res) {
 
     if (!userResponse.ok) {
       console.error('[Discord Callback] User data error:', userText);
-      res.setHeader('Location', `${FRONTEND_URL}/?error=${encodeURIComponent('Failed to get user data: ' + userText)}`);
+      res.setHeader('Location', `${frontendUrl}/?error=${encodeURIComponent('Failed to get user data: ' + userText)}`);
       return res.status(302).end();
     }
 
@@ -512,13 +563,13 @@ async function handleDiscordCallback(req, res) {
       userData = JSON.parse(userText);
     } catch (e) {
       console.error('[Discord Callback] Failed to parse user data:', e);
-      res.setHeader('Location', `${FRONTEND_URL}/?error=${encodeURIComponent('Invalid user data response')}`);
+      res.setHeader('Location', `${frontendUrl}/?error=${encodeURIComponent('Invalid user data response')}`);
       return res.status(302).end();
     }
 
     if (!userData.id || !userData.username) {
       console.error('[Discord Callback] Invalid user data:', userData);
-      res.setHeader('Location', `${FRONTEND_URL}/?error=${encodeURIComponent('Invalid user data received')}`);
+      res.setHeader('Location', `${frontendUrl}/?error=${encodeURIComponent('Invalid user data received')}`);
       return res.status(302).end();
     }
 
@@ -530,15 +581,16 @@ async function handleDiscordCallback(req, res) {
 
   await syncDiscordDisplayName(cookieUser);
 
+  // DISABLED: Role assignment not set up yet
   // Automatically sync Discord roles after authentication
   // Run in background so it doesn't block the redirect
-  const { syncUserRoles } = await import('../integrations/discord/roles.js');
-  const guildId = process.env.DISCORD_GUILD_ID || runtime.discord?.guildId;
-  if (guildId && cookieUser.discord_id) {
-    syncUserRoles(cookieUser.discord_id, guildId).catch(err => {
-      console.error('[Discord Callback] Error syncing roles (non-blocking):', err);
-    });
-  }
+  // const { syncUserRoles } = await import('../integrations/discord/roles.js');
+  // const guildId = process.env.DISCORD_GUILD_ID || runtime.discord?.guildId;
+  // if (guildId && cookieUser.discord_id) {
+  //   syncUserRoles(cookieUser.discord_id, guildId).catch(err => {
+  //     console.error('[Discord Callback] Error syncing roles (non-blocking):', err);
+  //   });
+  // }
 
   // Set auth cookies
   const oneWeek = 7 * 24 * 60 * 60 * 1000;
@@ -556,13 +608,13 @@ async function handleDiscordCallback(req, res) {
   console.log('[Discord Callback] Setting cookies:', responseCookies);
   res.setHeader('Set-Cookie', responseCookies);
 
-    // Redirect to verify page
-    console.log('[Discord Callback] Redirecting to verify page');
-    res.setHeader('Location', `${FRONTEND_URL}/`);
+    // Redirect to verify page - use request origin for localhost, otherwise use FRONTEND_URL
+    console.log('[Discord Callback] Redirecting to verify page:', frontendUrl);
+    res.setHeader('Location', `${frontendUrl}/`);
     return res.status(302).end();
   } catch (error) {
     console.error('[Discord Callback] Error:', error);
-    res.setHeader('Location', `${FRONTEND_URL}/?error=${encodeURIComponent(error.message)}`);
+    res.setHeader('Location', `${frontendUrl}/?error=${encodeURIComponent(error.message)}`);
     return res.status(302).end();
   }
 }
@@ -603,14 +655,44 @@ async function handleWallet(req, res) {
       await client.query('BEGIN');
       
       console.log('[Wallet Debug] Inserting into user_wallets for discord_id:', user.discord_id);
+      const discordId = user.discord_id;
+      const discordName = user.discord_display_name || user.discord_username;
       
-      // Insert into user_wallets first, which will trigger creation of other entries
+      // Insert into user_wallets first
       const result = await client.query(
         'INSERT INTO user_wallets (discord_id, wallet_address, discord_name, is_primary) VALUES ($1, $2, $3, true) ON CONFLICT (discord_id, wallet_address) DO UPDATE SET last_used = CURRENT_TIMESTAMP, discord_name = EXCLUDED.discord_name RETURNING *',
-        [user.discord_id, wallet_address, user.discord_display_name || user.discord_username]
+        [discordId, wallet_address, discordName]
       );
 
       console.log('[Wallet Debug] user_wallets insert result:', result.rows[0]);
+
+      // Sync ownership in nft_metadata for ALL wallets linked to this Discord user
+      await client.query(
+        `
+          UPDATE nft_metadata
+          SET owner_discord_id = $1,
+              owner_name = $2
+          WHERE owner_wallet IN (
+            SELECT wallet_address FROM user_wallets WHERE discord_id = $1
+          )
+        `,
+        [discordId, discordName]
+      );
+
+      // Update or create token_holders entries for ALL wallets linked to this Discord user
+      await client.query(
+        `
+          INSERT INTO token_holders (wallet_address, owner_discord_id, owner_name, last_updated)
+          SELECT wallet_address, $1, $2, NOW()
+          FROM user_wallets
+          WHERE discord_id = $1
+          ON CONFLICT (wallet_address) DO UPDATE SET
+            owner_discord_id = EXCLUDED.owner_discord_id,
+            owner_name = EXCLUDED.owner_name,
+            last_updated = NOW()
+        `,
+        [discordId, discordName]
+      );
 
       await client.query('COMMIT');
       await syncDiscordDisplayName(user);

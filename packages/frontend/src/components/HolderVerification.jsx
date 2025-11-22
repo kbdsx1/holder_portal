@@ -65,9 +65,13 @@ const HolderVerification = () => {
       const state = crypto.getRandomValues(new Uint8Array(16))
         .reduce((str, byte) => str + byte.toString(16).padStart(2, '0'), '');
       
-      document.cookie = `discord_state=${state}; path=/; max-age=300; secure; samesite=lax`;
-      window.location.href = `${API_BASE}/api/auth/discord?state=${state}`;
+      document.cookie = `discord_state=${state}; path=/; max-age=300; samesite=lax`;
+      // Use window.open as fallback if direct navigation fails
+      const url = `${API_BASE}/api/auth/discord?state=${state}`;
+      console.log('Navigating to Discord auth:', url);
+      window.location.replace(url);
     } catch (error) {
+      console.error('Discord login error:', error);
       setError('Failed to start Discord authentication');
     }
   };

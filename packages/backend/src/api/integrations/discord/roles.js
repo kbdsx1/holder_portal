@@ -460,23 +460,7 @@ async function addRolesViaRestAPI(guildId, userId, roleIds) {
 
 // Helper function to check if user should have a role
 function checkRoleEligibility(userRoles, role) {
-  // Check harvester roles (using 'holder' type) based on boolean flags (1 cNFT = role)
-  if (role.type === 'holder' && role.collection?.startsWith('seedling_')) {
-      switch (role.collection) {
-      case 'seedling_gold':
-        return !!userRoles.harvester_gold;
-      case 'seedling_silver':
-        return !!userRoles.harvester_silver;
-      case 'seedling_purple':
-        return !!userRoles.harvester_purple;
-      case 'seedling_dark_green':
-        return !!userRoles.harvester_dark_green;
-      case 'seedling_light_green':
-        return !!userRoles.harvester_light_green;
-      default:
-        return false;
-    }
-  }
+  // Harvester roles removed - no longer using harvester columns
   
   // Check if user has this role in their roles JSONB array
   if (userRoles.roles && Array.isArray(userRoles.roles)) {

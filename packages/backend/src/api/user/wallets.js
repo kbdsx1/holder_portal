@@ -81,15 +81,33 @@ userWalletsRouter.post('/', async (req, res) => {
       [discordId, wallet_address, discordName]
     );
 
-    // Sync ownership in nft_metadata for this wallet
+    // Sync ownership in nft_metadata for ALL wallets linked to this Discord user
+    // This updates all NFTs owned by any wallet in user_wallets for this Discord user
     await dbPool.query(
       `
         UPDATE nft_metadata
         SET owner_discord_id = $1,
             owner_name = $2
-        WHERE owner_wallet = $3
+        WHERE owner_wallet IN (
+          SELECT wallet_address FROM user_wallets WHERE discord_id = $1
+        )
       `,
-      [discordId, discordName, wallet_address]
+      [discordId, discordName]
+    );
+
+    // Update or create token_holders entries for ALL wallets linked to this Discord user
+    await dbPool.query(
+      `
+        INSERT INTO token_holders (wallet_address, owner_discord_id, owner_name, last_updated)
+        SELECT wallet_address, $1::varchar, $2::varchar, NOW()
+        FROM user_wallets
+        WHERE discord_id = $1::varchar
+        ON CONFLICT (wallet_address) DO UPDATE SET
+          owner_discord_id = EXCLUDED.owner_discord_id,
+          owner_name = EXCLUDED.owner_name,
+          last_updated = NOW()
+      `,
+      [discordId, discordName]
     );
 
     // Upsert collection_counts per-colour and totals for this user
@@ -207,72 +225,17 @@ userWalletsRouter.post('/', async (req, res) => {
     );
 
     // Counts are automatically updated by the INSERT above
+    // token_holders entries are already updated above for all linked wallets
 
-    // Attach wallet ownership on token_holders (preserves existing balance if any)
-    await dbPool.query(
-      `
-        INSERT INTO token_holders (wallet_address, owner_discord_id, owner_name, last_updated)
-        VALUES ($1, $2, $3, NOW())
-        ON CONFLICT (wallet_address) DO UPDATE SET
-          owner_discord_id = EXCLUDED.owner_discord_id,
-          owner_name = EXCLUDED.owner_name,
-          last_updated = NOW()
-      `,
-      [wallet_address, discordId, discordName]
-    );
-
-    // Update harvester flags based on collection_counts (1+ cNFT = eligible)
-    // Ensure harvester columns exist
-    const harvesterColumns = [
-      'harvester_gold',
-      'harvester_silver',
-      'harvester_purple',
-      'harvester_dark_green',
-      'harvester_light_green'
-    ];
-    
-    for (const col of harvesterColumns) {
-      try {
-        await dbPool.query(`ALTER TABLE user_roles ADD COLUMN IF NOT EXISTS ${col} BOOLEAN DEFAULT FALSE`);
-      } catch (error) {
-        if (error.code !== '42701') console.error(`Error adding ${col}:`, error.message);
-      }
-    }
-
-    // Update harvester flags from collection_counts
-    await dbPool.query(
-      `
-        INSERT INTO user_roles (discord_id, harvester_gold, harvester_silver, harvester_purple, harvester_dark_green, harvester_light_green)
-        SELECT 
-          $1::varchar,
-          (cnft_gold_count > 0) AS harvester_gold,
-          (cnft_silver_count > 0) AS harvester_silver,
-          (cnft_purple_count > 0) AS harvester_purple,
-          (cnft_dark_green_count > 0) AS harvester_dark_green,
-          (cnft_light_green_count > 0) AS harvester_light_green
-        FROM collection_counts
-        WHERE discord_id = $1::varchar
-        ON CONFLICT (discord_id) DO UPDATE SET
-          harvester_gold = EXCLUDED.harvester_gold,
-          harvester_silver = EXCLUDED.harvester_silver,
-          harvester_purple = EXCLUDED.harvester_purple,
-          harvester_dark_green = EXCLUDED.harvester_dark_green,
-          harvester_light_green = EXCLUDED.harvester_light_green
-      `,
-      [discordId]
-    );
-
-    // Rebuild roles JSON from collection_counts + roles catalog (includes harvester flags)
-    await dbPool.query('SELECT rebuild_user_roles($1::varchar)', [discordId]);
-
-    // Automatically sync Discord roles after wallet link
-    const { syncUserRoles } = await import('../integrations/discord/roles.js');
-    const guildId = process.env.DISCORD_GUILD_ID;
-    if (guildId) {
-      syncUserRoles(discordId, guildId).catch(err => {
-        console.error('[Wallet Link] Error syncing roles (non-blocking):', err);
-      });
-    }
+    // DISABLED: Role assignment not set up yet
+    // await dbPool.query('SELECT rebuild_user_roles($1::varchar)', [discordId]);
+    // const { syncUserRoles } = await import('../integrations/discord/roles.js');
+    // const guildId = process.env.DISCORD_GUILD_ID;
+    // if (guildId) {
+    //   syncUserRoles(discordId, guildId).catch(err => {
+    //     console.error('[Wallet Link] Error syncing roles (non-blocking):', err);
+    //   });
+    // }
 
     res.json({ success: true });
   } catch (error) {
